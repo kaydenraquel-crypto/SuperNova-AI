@@ -1,0 +1,242 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: supernova-app
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: api
+    environment: production
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{ ssl_cert_arn }}"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+    - name: websocket
+      port: 8001
+      targetPort: websocket
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: supernova-ai
+    component: api
+  sessionAffinity: None
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: nginx
+    environment: production
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{ ssl_cert_arn }}"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9113"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: https
+      protocol: TCP
+    - name: metrics
+      port: 9113
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: supernova-ai
+    component: nginx
+  loadBalancerSourceRanges:
+    - 0.0.0.0/0  # Restrict this in production
+  externalTrafficPolicy: Local
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: redis
+    environment: production
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
+    - name: metrics
+      port: 9121
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: supernova-ai
+    component: redis
+    role: master
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supernova-app-headless
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: api
+    environment: production
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+    - name: websocket
+      port: 8001
+      targetPort: websocket
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: supernova-ai
+    component: api
+  sessionAffinity: None
+
+---
+# Monitoring Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+    service: prometheus
+spec:
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    app: prometheus
+    component: server
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+    service: grafana
+spec:
+  type: LoadBalancer
+  ports:
+    - name: web
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: grafana
+    component: server
+  loadBalancerSourceRanges:
+    - 10.0.0.0/8  # Restrict to internal network
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-service
+  namespace: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+    service: alertmanager
+spec:
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+  selector:
+    app: alertmanager
+    component: server
+
+---
+# External Services for Database (if managed externally)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-external
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: database
+    type: external
+spec:
+  type: ExternalName
+  externalName: "{{ postgres_hostname }}"
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: timescale-external
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: timescale
+    type: external
+spec:
+  type: ExternalName
+  externalName: "{{ timescale_hostname }}"
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP

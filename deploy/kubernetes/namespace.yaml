@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: supernova-production
+  labels:
+    app: supernova-ai
+    environment: production
+    version: v1.0.0
+  annotations:
+    description: "SuperNova AI Production Environment"
+    owner: "SuperNova AI Team"
+    compliance: "SOC2,GDPR,CCPA"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: supernova-staging
+  labels:
+    app: supernova-ai
+    environment: staging
+    version: v1.0.0-staging
+  annotations:
+    description: "SuperNova AI Staging Environment"
+    owner: "SuperNova AI Team"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+    version: v1.0.0
+  annotations:
+    description: "SuperNova AI Monitoring Infrastructure"

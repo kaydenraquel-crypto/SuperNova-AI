@@ -1,0 +1,325 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: supernova-ingress
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: ingress
+    environment: production
+  annotations:
+    # Ingress Controller Specific
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # SSL/TLS Configuration
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+    # Security Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+      add_header X-Frame-Options "DENY" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' https:; frame-ancestors 'none'; base-uri 'self'" always;
+    
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/rate-limit-connections: "10"
+    
+    # Request Size Limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/client-max-body-size: "10m"
+    
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    
+    # Load Balancing
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "30s"
+    nginx.ingress.kubernetes.io/upstream-max-fails: "3"
+    
+    # Session Affinity (if needed)
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+    nginx.ingress.kubernetes.io/session-cookie-name: "supernova-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "86400"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "86400"
+    nginx.ingress.kubernetes.io/session-cookie-path: "/"
+    
+    # Compression
+    nginx.ingress.kubernetes.io/enable-gzip: "true"
+    nginx.ingress.kubernetes.io/gzip-level: "6"
+    nginx.ingress.kubernetes.io/gzip-types: "text/plain,text/css,application/json,application/javascript,text/xml,application/xml,application/xml+rss,text/javascript"
+    
+    # CORS (if needed)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://dashboard.supernova-ai.com,https://app.supernova-ai.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, X-API-Key, X-Request-ID"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+    
+    # Monitoring and Logging
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    nginx.ingress.kubernetes.io/log-format: '{"time": "$time_iso8601", "remote_addr": "$remote_addr", "request": "$request", "status": $status, "body_bytes_sent": $body_bytes_sent, "http_referer": "$http_referer", "http_user_agent": "$http_user_agent", "request_time": $request_time, "upstream_response_time": "$upstream_response_time"}'
+
+spec:
+  tls:
+    - hosts:
+        - api.supernova-ai.com
+        - dashboard.supernova-ai.com
+        - ws.supernova-ai.com
+      secretName: supernova-tls-cert
+    - hosts:
+        - app.supernova-ai.com
+        - admin.supernova-ai.com
+      secretName: supernova-app-tls-cert
+  
+  rules:
+    # Main API Endpoint
+    - host: api.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8000
+          
+          # Health and Status Endpoints
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8000
+          
+          - path: /ready
+            pathType: Exact
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8000
+          
+          # Metrics Endpoint (restricted)
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 9090
+    
+    # WebSocket Endpoint
+    - host: ws.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8001
+    
+    # Dashboard/Frontend
+    - host: dashboard.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-frontend
+                port:
+                  number: 80
+          
+          # API proxy for dashboard
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8000
+    
+    # Application Interface
+    - host: app.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-frontend
+                port:
+                  number: 80
+          
+          # WebSocket for app
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 8001
+    
+    # Admin Interface (restricted)
+    - host: admin.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-admin
+                port:
+                  number: 80
+
+---
+# Monitoring Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: supernova-monitoring-ingress
+  namespace: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    
+    # Authentication for monitoring endpoints
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: monitoring-auth
+    nginx.ingress.kubernetes.io/auth-realm: "SuperNova AI Monitoring"
+    
+    # Security headers for monitoring
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+    
+    # IP Whitelist for monitoring (restrict to office/VPN IPs)
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+spec:
+  tls:
+    - hosts:
+        - monitoring.supernova-ai.com
+        - grafana.supernova-ai.com
+        - prometheus.supernova-ai.com
+      secretName: monitoring-tls-cert
+  
+  rules:
+    # Grafana Dashboard
+    - host: grafana.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana-service
+                port:
+                  number: 3000
+    
+    # Prometheus
+    - host: prometheus.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-service
+                port:
+                  number: 9090
+    
+    # AlertManager
+    - host: alerts.supernova-ai.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: alertmanager-service
+                port:
+                  number: 9093
+
+---
+# Internal Services Ingress (for debugging/admin access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: supernova-internal-ingress
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: internal
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    
+    # Strong authentication for internal services
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: internal-auth
+    nginx.ingress.kubernetes.io/auth-realm: "SuperNova AI Internal"
+    
+    # Strict IP whitelist for internal access
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12"
+    
+    # Rate limiting for internal services
+    nginx.ingress.kubernetes.io/rate-limit: "20"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+
+spec:
+  tls:
+    - hosts:
+        - internal.supernova-ai.com
+      secretName: internal-tls-cert
+  
+  rules:
+    - host: internal.supernova-ai.com
+      http:
+        paths:
+          # Redis monitoring (if enabled)
+          - path: /redis
+            pathType: Prefix
+            backend:
+              service:
+                name: redis-commander
+                port:
+                  number: 8081
+          
+          # Database admin (if enabled)
+          - path: /db
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  number: 80
+          
+          # Application metrics
+          - path: /app-metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: supernova-app
+                port:
+                  number: 9090

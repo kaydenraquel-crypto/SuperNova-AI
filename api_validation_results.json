@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-08-26T12:54:05.493309",
+  "tests": {
+    "api_structure": {
+      "status": "SUCCESS",
+      "has_fastapi": true,
+      "has_chat_endpoints": true,
+      "has_websocket": true,
+      "has_cors": true,
+      "has_error_handling": true,
+      "has_pydantic_models": false,
+      "endpoint_count": 35,
+      "chat_endpoints": {
+        "POST /chat": false,
+        "WebSocket /ws": true,
+        "GET /chat/history": true,
+        "WebSocket /ws/chat": true
+      },
+      "file_size_kb": 90.365234375,
+      "lines_of_code": 2226
+    },
+    "websocket_structure": {
+      "status": "PARTIAL",
+      "has_websocket_manager": false,
+      "has_connect_method": true,
+      "has_disconnect_method": true,
+      "has_send_message": true,
+      "has_broadcast": true,
+      "has_typing_indicator": true,
+      "has_presence_system": true,
+      "has_message_history": true,
+      "has_error_handling": true,
+      "method_count": 45,
+      "file_size_kb": 25.96875,
+      "lines_of_code": 652
+    },
+    "chat_ui_structure": {
+      "status": "SUCCESS",
+      "has_html_function": true,
+      "has_style_function": false,
+      "has_fastapi_imports": true,
+      "has_html_content": true,
+      "file_size_kb": 70.6123046875,
+      "estimated_large_file": true
+    },
+    "database_schema": {
+      "status": "SUCCESS",
+      "has_sqlalchemy": true,
+      "has_models": true,
+      "has_user_model": true,
+      "has_conversation_model": true,
+      "has_session_factory": true,
+      "has_database_url": true,
+      "model_count": 14,
+      "file_size_kb": 16.6025390625
+    },
+    "configuration": {
+      "status": "SUCCESS",
+      "has_settings_class": true,
+      "has_llm_config": true,
+      "has_database_config": true,
+      "has_cors_config": false,
+      "has_environment_vars": true,
+      "has_pydantic_settings": false,
+      "config_params_count": 110,
+      "file_size_kb": 12.01953125
+    }
+  },
+  "summary": {
+    "overall_status": "READY_WITH_MINOR_ISSUES",
+    "total_tests": 5,
+    "success_count": 4,
+    "partial_count": 1,
+    "failed_count": 0,
+    "success_rate": 80.0,
+    "estimated_api_endpoints": 35,
+    "websocket_methods": 45,
+    "database_models": 14,
+    "deployment_readiness": {
+      "ready": true,
+      "confidence": "MEDIUM",
+      "blockers": 0,
+      "description": "Ready for deployment with monitoring recommended"
+    },
+    "recommendations": [
+      "API structure is well-defined and ready for testing",
+      "Rich API with multiple endpoints detected - consider API documentation",
+      "Rich chat UI with extensive features - ready for user testing",
+      "Comprehensive data model supports complex features",
+      "DEPLOYMENT CHECKLIST:",
+      "1. Set up environment variables and API keys",
+      "2. Configure database connection",
+      "3. Test API endpoints with Postman or curl",
+      "4. Test WebSocket connections in browser",
+      "5. Deploy to staging environment for user testing",
+      "6. Set up monitoring and logging",
+      "7. Conduct load testing with expected user volume"
+    ]
+  }
+}

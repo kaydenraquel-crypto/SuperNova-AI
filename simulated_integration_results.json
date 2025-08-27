@@ -1,0 +1,1349 @@
+{
+  "start_time": "2025-08-26T11:29:07.782558",
+  "tests": {
+    "dependency_structure": {
+      "requirements_analysis": {
+        "total_requirements": 41,
+        "core_dependencies": [
+          "fastapi==0.111.0",
+          "uvicorn==0.30.1",
+          "pydantic==2.8.2",
+          "SQLAlchemy==2.0.32",
+          "python-dotenv==1.0.1",
+          "pandas==2.2.2",
+          "numpy==1.26.4",
+          "httpx==0.27.0",
+          "scikit-learn==1.5.1",
+          "nltk==3.8.1",
+          "torch==2.1.0",
+          "beautifulsoup4==4.12.2",
+          "newspaper3k==0.2.8",
+          "aiohttp==3.9.1",
+          "asyncio-throttle==1.0.2",
+          "lxml==4.9.3",
+          "websockets==12.0",
+          "aiohttp==3.9.5",
+          "redis==5.0.1",
+          "tenacity==8.2.3",
+          "ta-lib"
+        ],
+        "llm_dependencies": [
+          "langchain>=0.1.0",
+          "langchain-openai>=0.1.0",
+          "langchain-anthropic>=0.1.0",
+          "langchain-community>=0.1.0",
+          "langchain-core>=0.1.0",
+          "langchain-ollama>=0.1.0",
+          "langchain-huggingface>=0.1.0",
+          "tiktoken>=0.5.0",
+          "openai>=1.0.0",
+          "anthropic>=0.21.0"
+        ],
+        "vectorbt_dependencies": [
+          "vectorbt>=0.25.0",
+          "numba>=0.56.0"
+        ],
+        "prefect_dependencies": [
+          "prefect>=2.14.0",
+          "prefect-sqlalchemy>=0.2.0"
+        ],
+        "sentiment_dependencies": [
+          "tweepy==4.14.0",
+          "praw==7.7.1",
+          "spacy==3.7.2",
+          "textblob==0.17.1",
+          "vaderSentiment==3.3.2",
+          "transformers==4.35.0"
+        ]
+      }
+    },
+    "code_structure": {
+      "advisor_analysis": {
+        "imports": {
+          "imports": [
+            {
+              "type": "from_import",
+              "module": "__future__",
+              "name": "annotations",
+              "alias": null,
+              "line": 1
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Tuple",
+              "alias": null,
+              "line": 2
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Optional",
+              "alias": null,
+              "line": 2
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Dict",
+              "alias": null,
+              "line": 2
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Any",
+              "alias": null,
+              "line": 2
+            },
+            {
+              "type": "import",
+              "module": "asyncio",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "import",
+              "module": "time",
+              "alias": null,
+              "line": 4
+            },
+            {
+              "type": "import",
+              "module": "hashlib",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "import",
+              "module": "json",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "import",
+              "module": "logging",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "functools",
+              "name": "lru_cache",
+              "alias": null,
+              "line": 8
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "datetime",
+              "alias": null,
+              "line": 9
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "timedelta",
+              "alias": null,
+              "line": 9
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "make_df",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "ensemble",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "TEMPLATES",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "config",
+              "name": "settings",
+              "alias": null,
+              "line": 13
+            },
+            {
+              "type": "from_import",
+              "module": "prompts",
+              "name": "get_prompt_for_action",
+              "alias": null,
+              "line": 14
+            },
+            {
+              "type": "from_import",
+              "module": "prompts",
+              "name": "format_technical_indicators",
+              "alias": null,
+              "line": 14
+            },
+            {
+              "type": "from_import",
+              "module": "prompts",
+              "name": "format_risk_factors",
+              "alias": null,
+              "line": 14
+            },
+            {
+              "type": "from_import",
+              "module": "prompts",
+              "name": "RISK_DISCLAIMER_TEMPLATE",
+              "alias": null,
+              "line": 14
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_core.language_models",
+              "name": "BaseLanguageModel",
+              "alias": null,
+              "line": 21
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_core.prompts",
+              "name": "PromptTemplate",
+              "alias": null,
+              "line": 22
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_core.output_parsers",
+              "name": "StrOutputParser",
+              "alias": null,
+              "line": 23
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_core.runnables",
+              "name": "RunnablePassthrough",
+              "alias": null,
+              "line": 24
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_openai",
+              "name": "ChatOpenAI",
+              "alias": "LLMModel",
+              "line": 28
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_anthropic",
+              "name": "ChatAnthropic",
+              "alias": "LLMModel",
+              "line": 30
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_ollama",
+              "name": "OllamaLLM",
+              "alias": "LLMModel",
+              "line": 32
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_huggingface",
+              "name": "HuggingFacePipeline",
+              "alias": "LLMModel",
+              "line": 34
+            },
+            {
+              "type": "from_import",
+              "module": "langchain_openai",
+              "name": "ChatOpenAI",
+              "alias": "LLMModel",
+              "line": 36
+            },
+            {
+              "type": "import",
+              "module": "concurrent.futures",
+              "alias": null,
+              "line": 367
+            }
+          ],
+          "conditional_imports": 1,
+          "total_imports": 31,
+          "content_lines": 408
+        },
+        "structure": {
+          "classes": [],
+          "functions": [
+            {
+              "name": "score_risk",
+              "args": 1,
+              "line": 51,
+              "is_async": false
+            },
+            {
+              "name": "_get_risk_profile_name",
+              "args": 1,
+              "line": 58,
+              "is_async": false
+            },
+            {
+              "name": "_estimate_token_cost",
+              "args": 2,
+              "line": 67,
+              "is_async": false
+            },
+            {
+              "name": "_update_cost_tracker",
+              "args": 1,
+              "line": 87,
+              "is_async": false
+            },
+            {
+              "name": "_get_cache_key",
+              "args": 5,
+              "line": 107,
+              "is_async": false
+            },
+            {
+              "name": "_get_cached_response",
+              "args": 1,
+              "line": 116,
+              "is_async": false
+            },
+            {
+              "name": "_cache_response",
+              "args": 2,
+              "line": 129,
+              "is_async": false
+            },
+            {
+              "name": "_get_llm_model",
+              "args": 0,
+              "line": 141,
+              "is_async": false
+            },
+            {
+              "name": "_generate_simple_rationale",
+              "args": 5,
+              "line": 199,
+              "is_async": false
+            },
+            {
+              "name": "_prepare_llm_context",
+              "args": 9,
+              "line": 211,
+              "is_async": false
+            },
+            {
+              "name": "advise",
+              "args": 8,
+              "line": 306,
+              "is_async": false
+            }
+          ],
+          "class_count": 0,
+          "function_count": 11
+        },
+        "file_exists": true
+      },
+      "backtester_analysis": {
+        "imports": {
+          "imports": [
+            {
+              "type": "import",
+              "module": "pandas",
+              "alias": "pd",
+              "line": 1
+            },
+            {
+              "type": "import",
+              "module": "numpy",
+              "alias": "np",
+              "line": 2
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Dict",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "List",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Tuple",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Optional",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Any",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "dataclasses",
+              "name": "dataclass",
+              "alias": null,
+              "line": 4
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "datetime",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "time",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "import",
+              "module": "warnings",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "make_df",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "TEMPLATES",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "ensemble",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "strategy_engine",
+              "name": "adaptive_ensemble",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "import",
+              "module": "vectorbt",
+              "alias": "vbt",
+              "line": 11
+            },
+            {
+              "type": "import",
+              "module": "talib",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "numba",
+              "name": "jit",
+              "alias": null,
+              "line": 13
+            },
+            {
+              "type": "from_import",
+              "module": "recursive",
+              "name": "optimize_strategy_genetic",
+              "alias": null,
+              "line": 1135
+            },
+            {
+              "type": "from_import",
+              "module": "recursive",
+              "name": "GeneticConfig",
+              "alias": null,
+              "line": 1135
+            },
+            {
+              "type": "import",
+              "module": "itertools",
+              "alias": null,
+              "line": 1169
+            }
+          ],
+          "conditional_imports": 2,
+          "total_imports": 21,
+          "content_lines": 1703
+        },
+        "structure": {
+          "classes": [
+            {
+              "name": "TradeRecord",
+              "methods": [
+                "to_dict"
+              ],
+              "method_count": 1,
+              "line": 20
+            },
+            {
+              "name": "AssetConfig",
+              "methods": [],
+              "method_count": 0,
+              "line": 73
+            }
+          ],
+          "functions": [],
+          "class_count": 2,
+          "function_count": 0
+        },
+        "file_exists": true
+      },
+      "workflows_analysis": {
+        "imports": {
+          "imports": [
+            {
+              "type": "from_import",
+              "module": "__future__",
+              "name": "annotations",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "import",
+              "module": "asyncio",
+              "alias": null,
+              "line": 8
+            },
+            {
+              "type": "import",
+              "module": "logging",
+              "alias": null,
+              "line": 9
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "datetime",
+              "alias": null,
+              "line": 10
+            },
+            {
+              "type": "from_import",
+              "module": "datetime",
+              "name": "timedelta",
+              "alias": null,
+              "line": 10
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "List",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Dict",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Optional",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Any",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "collections",
+              "name": "defaultdict",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "TwitterConnector",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "RedditConnector",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "NewsConnector",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "SentimentSignal",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "SentimentSource",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "MarketRegime",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "score_text",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "CONFIDENCE_THRESHOLD",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "calculate_sentiment_momentum",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "detect_contrarian_signals",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "sentiment",
+              "name": "adjust_for_market_regime",
+              "alias": null,
+              "line": 44
+            },
+            {
+              "type": "from_import",
+              "module": "prefect",
+              "name": "task",
+              "alias": null,
+              "line": 16
+            },
+            {
+              "type": "from_import",
+              "module": "prefect",
+              "name": "flow",
+              "alias": null,
+              "line": 16
+            },
+            {
+              "type": "from_import",
+              "module": "prefect",
+              "name": "get_run_logger",
+              "alias": null,
+              "line": 16
+            },
+            {
+              "type": "from_import",
+              "module": "prefect.task_runners",
+              "name": "ConcurrentTaskRunner",
+              "alias": null,
+              "line": 17
+            },
+            {
+              "type": "from_import",
+              "module": "prefect.blocks.core",
+              "name": "Block",
+              "alias": null,
+              "line": 18
+            },
+            {
+              "type": "from_import",
+              "module": "prefect.server.schemas.schedules",
+              "name": "IntervalSchedule",
+              "alias": null,
+              "line": 19
+            },
+            {
+              "type": "from_import",
+              "module": "config",
+              "name": "settings",
+              "alias": null,
+              "line": 52
+            }
+          ],
+          "conditional_imports": 2,
+          "total_imports": 28,
+          "content_lines": 664
+        },
+        "structure": {
+          "classes": [
+            {
+              "name": "ConcurrentTaskRunner",
+              "methods": [
+                "__init__"
+              ],
+              "method_count": 1,
+              "line": 39
+            },
+            {
+              "name": "MockSettings",
+              "methods": [],
+              "method_count": 0,
+              "line": 55
+            }
+          ],
+          "functions": [],
+          "class_count": 2,
+          "function_count": 0
+        },
+        "file_exists": true
+      },
+      "api_analysis": {
+        "imports": {
+          "imports": [
+            {
+              "type": "import",
+              "module": "json",
+              "alias": null,
+              "line": 1
+            },
+            {
+              "type": "from_import",
+              "module": "contextlib",
+              "name": "asynccontextmanager",
+              "alias": null,
+              "line": 2
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "List",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Dict",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "typing",
+              "name": "Any",
+              "alias": null,
+              "line": 3
+            },
+            {
+              "type": "from_import",
+              "module": "fastapi",
+              "name": "FastAPI",
+              "alias": null,
+              "line": 4
+            },
+            {
+              "type": "from_import",
+              "module": "fastapi",
+              "name": "HTTPException",
+              "alias": null,
+              "line": 4
+            },
+            {
+              "type": "from_import",
+              "module": "fastapi",
+              "name": "BackgroundTasks",
+              "alias": null,
+              "line": 4
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "init_db",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "SessionLocal",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "User",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "Profile",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "Asset",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "db",
+              "name": "WatchlistItem",
+              "alias": null,
+              "line": 5
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "IntakeRequest",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "ProfileOut",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "AdviceRequest",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "AdviceOut",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "WatchlistRequest",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "AlertOut",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "BacktestRequest",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "schemas",
+              "name": "BacktestOut",
+              "alias": null,
+              "line": 6
+            },
+            {
+              "type": "from_import",
+              "module": "advisor",
+              "name": "score_risk",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "advisor",
+              "name": "advise",
+              "alias": null,
+              "line": 7
+            },
+            {
+              "type": "from_import",
+              "module": "backtester",
+              "name": "run_backtest",
+              "alias": null,
+              "line": 8
+            },
+            {
+              "type": "from_import",
+              "module": "backtester",
+              "name": "run_vbt_backtest",
+              "alias": null,
+              "line": 8
+            },
+            {
+              "type": "from_import",
+              "module": "backtester",
+              "name": "VBT_AVAILABLE",
+              "alias": null,
+              "line": 8
+            },
+            {
+              "type": "from_import",
+              "module": "config",
+              "name": "settings",
+              "alias": null,
+              "line": 9
+            },
+            {
+              "type": "from_import",
+              "module": "alerting",
+              "name": "evaluate_alerts",
+              "alias": null,
+              "line": 10
+            },
+            {
+              "type": "from_import",
+              "module": "alerting",
+              "name": "send_custom_alert",
+              "alias": null,
+              "line": 10
+            },
+            {
+              "type": "from_import",
+              "module": "journal",
+              "name": "log_event",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "journal",
+              "name": "append_session",
+              "alias": null,
+              "line": 11
+            },
+            {
+              "type": "from_import",
+              "module": "sqlalchemy",
+              "name": "select",
+              "alias": null,
+              "line": 12
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "get_connector",
+              "alias": null,
+              "line": 256
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "get_connector",
+              "alias": null,
+              "line": 277
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "get_connector",
+              "alias": null,
+              "line": 296
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "get_connector",
+              "alias": null,
+              "line": 319
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "get_connector",
+              "alias": null,
+              "line": 343
+            },
+            {
+              "type": "from_import",
+              "module": "connectors.novasignal",
+              "name": "health_check",
+              "alias": null,
+              "line": 361
+            }
+          ],
+          "conditional_imports": 0,
+          "total_imports": 39,
+          "content_lines": 370
+        },
+        "structure": {
+          "classes": [],
+          "functions": [
+            {
+              "name": "intake",
+              "args": 1,
+              "line": 26,
+              "is_async": false
+            },
+            {
+              "name": "get_advice",
+              "args": 1,
+              "line": 49,
+              "is_async": false
+            },
+            {
+              "name": "_get_risk",
+              "args": 1,
+              "line": 72,
+              "is_async": false
+            },
+            {
+              "name": "add_watchlist",
+              "args": 1,
+              "line": 82,
+              "is_async": false
+            },
+            {
+              "name": "backtest",
+              "args": 1,
+              "line": 122,
+              "is_async": false
+            },
+            {
+              "name": "vectorbt_backtest",
+              "args": 1,
+              "line": 191,
+              "is_async": false
+            }
+          ],
+          "class_count": 0,
+          "function_count": 6
+        },
+        "file_exists": true
+      },
+      "config_analysis": {
+        "imports": {
+          "imports": [
+            {
+              "type": "from_import",
+              "module": "dotenv",
+              "name": "load_dotenv",
+              "alias": null,
+              "line": 1
+            },
+            {
+              "type": "import",
+              "module": "os",
+              "alias": null,
+              "line": 2
+            }
+          ],
+          "conditional_imports": 0,
+          "total_imports": 2,
+          "content_lines": 160
+        },
+        "structure": {
+          "classes": [
+            {
+              "name": "Settings",
+              "methods": [],
+              "method_count": 0,
+              "line": 6
+            }
+          ],
+          "functions": [],
+          "class_count": 1,
+          "function_count": 0
+        },
+        "file_exists": true
+      }
+    },
+    "llm_integration": {
+      "llm_implementation": {
+        "langchain_imports": 9,
+        "llm_functions": [
+          "_get_llm_model",
+          "_generate_llm_rationale",
+          "_prepare_llm_context"
+        ],
+        "has_fallback_mechanism": true,
+        "has_error_handling": true,
+        "has_response_caching": true,
+        "has_cost_tracking": true,
+        "implementation_quality": "comprehensive"
+      }
+    },
+    "vectorbt_integration": {
+      "vectorbt_implementation": {
+        "has_vbt_import": true,
+        "vbt_functions": [
+          "run_vbt_backtest",
+          "_generate_vbt_signals",
+          "_prepare_vbt_data"
+        ],
+        "strategy_templates": [
+          "_sma_crossover_signals",
+          "_rsi_strategy_signals",
+          "_macd_strategy_signals",
+          "_bollinger_bands_signals"
+        ],
+        "strategy_count": 4,
+        "has_fallback_mechanism": true,
+        "has_error_handling": true,
+        "implementation_quality": "comprehensive"
+      }
+    },
+    "prefect_integration": {
+      "prefect_implementation": {
+        "prefect_imports": 4,
+        "task_decorators": 5,
+        "flow_decorators": 3,
+        "implemented_tasks": [
+          "fetch_twitter_data_task",
+          "fetch_reddit_data_task",
+          "fetch_news_data_task",
+          "analyze_sentiment_batch_task"
+        ],
+        "implemented_flows": [
+          "sentiment_analysis_flow",
+          "batch_sentiment_analysis_flow"
+        ],
+        "has_fallback_mechanism": true,
+        "has_mock_decorators": true,
+        "implementation_quality": "comprehensive"
+      }
+    },
+    "api_endpoints": {
+      "api_implementation": {
+        "total_endpoints": 13,
+        "endpoints": [
+          [
+            "POST",
+            "/intake"
+          ],
+          [
+            "POST",
+            "/advice"
+          ],
+          [
+            "POST",
+            "/watchlist/add"
+          ],
+          [
+            "POST",
+            "/alerts/evaluate"
+          ],
+          [
+            "POST",
+            "/backtest"
+          ],
+          [
+            "POST",
+            "/backtest/vectorbt"
+          ],
+          [
+            "POST",
+            "/novasignal/alerts/send"
+          ],
+          [
+            "GET",
+            "/novasignal/status"
+          ],
+          [
+            "GET",
+            "/novasignal/watchlist/{profile_id}"
+          ],
+          [
+            "POST",
+            "/novasignal/profile/{profile_id}/sync"
+          ],
+          [
+            "GET",
+            "/novasignal/historical/{symbol}"
+          ],
+          [
+            "POST",
+            "/novasignal/advice-explanation/{profile_id}"
+          ],
+          [
+            "GET",
+            "/novasignal/health"
+          ]
+        ],
+        "enhanced_endpoints": [
+          "advice",
+          "backtest",
+          "vectorbt_backtest"
+        ],
+        "has_advisor_import": true,
+        "has_backtester_import": true,
+        "has_vbt_integration": true,
+        "has_llm_integration": true
+      }
+    },
+    "configuration_coverage": {
+      "configuration_coverage": {
+        "llm_config_items": [
+          "LLM_ENABLED",
+          "LLM_PROVIDER",
+          "LLM_MODEL",
+          "LLM_TEMPERATURE",
+          "OPENAI_API_KEY",
+          "ANTHROPIC_API_KEY",
+          "LLM_CACHE_ENABLED",
+          "LLM_FALLBACK_ENABLED"
+        ],
+        "llm_coverage": "8/8",
+        "vbt_config_items": [
+          "VECTORBT_ENABLED",
+          "VECTORBT_DEFAULT_ENGINE",
+          "VECTORBT_DEFAULT_FEES",
+          "VECTORBT_DEFAULT_SLIPPAGE",
+          "DEFAULT_STRATEGY_ENGINE"
+        ],
+        "vbt_coverage": "5/5",
+        "prefect_config_items": [
+          "ENABLE_PREFECT",
+          "PREFECT_API_URL",
+          "PREFECT_API_KEY",
+          "PREFECT_TWITTER_RETRIES",
+          "PREFECT_REDDIT_RETRIES",
+          "PREFECT_TASK_TIMEOUT"
+        ],
+        "prefect_coverage": "6/6",
+        "total_enhancement_configs": 19
+      }
+    },
+    "error_handling": {
+      "advisor_error_handling": {
+        "try_except_blocks": 5,
+        "has_import_error_handling": true,
+        "fallback_indicators": 4,
+        "has_logging": true,
+        "error_handling_quality": "good"
+      },
+      "backtester_error_handling": {
+        "try_except_blocks": 18,
+        "has_import_error_handling": true,
+        "fallback_indicators": 4,
+        "has_logging": false,
+        "error_handling_quality": "good"
+      },
+      "workflows_error_handling": {
+        "try_except_blocks": 11,
+        "has_import_error_handling": true,
+        "fallback_indicators": 5,
+        "has_logging": true,
+        "error_handling_quality": "good"
+      }
+    }
+  },
+  "summary": {
+    "test_completion_time": "2025-08-26T11:29:08.048604",
+    "enhancement_status": {
+      "llm_integration": {
+        "status": "implemented",
+        "quality": "comprehensive",
+        "functions": 3,
+        "has_fallback": true,
+        "has_caching": true
+      },
+      "vectorbt_integration": {
+        "status": "implemented",
+        "quality": "comprehensive",
+        "functions": 3,
+        "strategies": 4,
+        "has_fallback": true
+      },
+      "prefect_integration": {
+        "status": "implemented",
+        "quality": "comprehensive",
+        "tasks": 4,
+        "flows": 2,
+        "has_fallback": true
+      },
+      "api_integration": {
+        "status": "implemented",
+        "total_endpoints": 13,
+        "enhanced_endpoints": [
+          "advice",
+          "backtest",
+          "vectorbt_backtest"
+        ],
+        "has_vbt_integration": true,
+        "has_llm_integration": true
+      },
+      "configuration": {
+        "status": "implemented",
+        "total_configs": 19,
+        "llm_coverage": "8/8",
+        "vbt_coverage": "5/5",
+        "prefect_coverage": "6/6"
+      }
+    },
+    "implementation_quality": {
+      "enhancements_implemented": "5/3",
+      "implementation_completeness": 166.66666666666669,
+      "overall_rating": "needs_work"
+    },
+    "recommendations": [
+      "Complete implementation of missing enhancements (-2 remaining)",
+      "Code structure analysis passed - proceed with dependency installation and functional testing"
+    ],
+    "critical_issues": []
+  },
+  "end_time": "2025-08-26T11:29:08.048638"
+}

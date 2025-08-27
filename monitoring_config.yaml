@@ -1,0 +1,401 @@
+# SuperNova AI Monitoring Configuration
+# =====================================
+
+# Health Check Configuration
+health_monitoring:
+  enabled: true
+  check_interval_seconds: 60
+  component_timeout_seconds: 30
+  history_retention_count: 100
+  
+  components:
+    database:
+      enabled: true
+      timeout_seconds: 10
+      slow_query_threshold_ms: 1000
+      connection_pool_threshold: 80
+    
+    llm_service:
+      enabled: true
+      timeout_seconds: 10
+      response_time_threshold_ms: 5000
+      test_prompt: "Health check test"
+      max_tokens: 10
+    
+    cache:
+      enabled: true
+      timeout_seconds: 5
+      operation_timeout_ms: 100
+      hit_rate_threshold: 0.7
+    
+    websocket:
+      enabled: true
+      error_rate_threshold: 0.1
+    
+    authentication:
+      enabled: true
+      timeout_seconds: 5
+      operation_timeout_ms: 500
+      failure_rate_threshold: 0.5
+    
+    system_resources:
+      enabled: true
+      cpu_threshold_warning: 80
+      cpu_threshold_critical: 90
+      memory_threshold_warning: 85
+      memory_threshold_critical: 95
+      disk_threshold_warning: 85
+      disk_threshold_critical: 95
+    
+    external_services:
+      enabled: true
+      timeout_seconds: 10
+      services:
+        - name: "internet_connectivity"
+          url: "https://www.google.com"
+          timeout: 5
+        - name: "github_api"
+          url: "https://api.github.com"
+          timeout: 10
+
+# Performance Monitoring Configuration
+performance_monitoring:
+  enabled: true
+  metrics_retention_count: 1000
+  resource_monitoring_interval_seconds: 10
+  endpoint_metrics_enabled: true
+  database_metrics_enabled: true
+  
+  thresholds:
+    api_response_time:
+      warning_ms: 1000
+      critical_ms: 5000
+    error_rate:
+      warning_percent: 1.0
+      critical_percent: 5.0
+    cpu_usage:
+      warning_percent: 80
+      critical_percent: 90
+    memory_usage:
+      warning_percent: 85
+      critical_percent: 95
+
+# Alert Configuration
+alerting:
+  enabled: true
+  processing_interval_seconds: 60
+  alert_retention_hours: 24
+  deduplication_enabled: true
+  
+  # Default alert rules
+  rules:
+    - name: "High CPU Usage"
+      metric_path: "system.cpu_percent"
+      operator: ">"
+      threshold: 85.0
+      severity: "HIGH"
+      evaluation_window_minutes: 5
+      min_duration_minutes: 2
+      cooldown_minutes: 15
+      channels: ["email", "slack"]
+      
+    - name: "Critical Memory Usage"
+      metric_path: "system.memory_percent"
+      operator: ">"
+      threshold: 95.0
+      severity: "CRITICAL"
+      evaluation_window_minutes: 5
+      min_duration_minutes: 1
+      cooldown_minutes: 10
+      channels: ["email", "slack", "pagerduty"]
+      
+    - name: "High Disk Usage"
+      metric_path: "system.disk_percent"
+      operator: ">"
+      threshold: 90.0
+      severity: "HIGH"
+      evaluation_window_minutes: 10
+      min_duration_minutes: 5
+      cooldown_minutes: 30
+      channels: ["email", "slack"]
+      
+    - name: "Slow API Response"
+      metric_path: "api.response_time_p95"
+      operator: ">"
+      threshold: 2000.0  # 2 seconds
+      severity: "MEDIUM"
+      evaluation_window_minutes: 5
+      min_duration_minutes: 3
+      cooldown_minutes: 15
+      channels: ["slack"]
+      
+    - name: "High Error Rate"
+      metric_path: "api.error_rate"
+      operator: ">"
+      threshold: 0.05  # 5%
+      severity: "HIGH"
+      evaluation_window_minutes: 5
+      min_duration_minutes: 2
+      cooldown_minutes: 10
+      channels: ["email", "slack"]
+      
+    - name: "Database Query Slow"
+      metric_path: "database.avg_query_time_ms"
+      operator: ">"
+      threshold: 1000.0  # 1 second
+      severity: "MEDIUM"
+      evaluation_window_minutes: 5
+      min_duration_minutes: 3
+      cooldown_minutes: 20
+      channels: ["email", "slack"]
+      
+    - name: "Low Cache Hit Rate"
+      metric_path: "cache.hit_rate"
+      operator: "<"
+      threshold: 0.7  # 70%
+      severity: "MEDIUM"
+      evaluation_window_minutes: 10
+      min_duration_minutes: 5
+      cooldown_minutes: 30
+      channels: ["slack"]
+
+# Notification Channels Configuration
+notifications:
+  email:
+    enabled: false  # Enable when SMTP is configured
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: ""  # Set via environment variable
+    password: ""  # Set via environment variable
+    from_address: "alerts@supernova-ai.com"
+    recipients: []  # Add email addresses
+    
+  slack:
+    enabled: false  # Enable when webhook URL is configured
+    webhook_url: ""  # Set via environment variable
+    username: "SuperNova AI Monitor"
+    icon_emoji: ":warning:"
+    
+  webhook:
+    enabled: false  # Enable when webhook URL is configured
+    url: ""  # Set via environment variable
+    headers:
+      Content-Type: "application/json"
+    timeout_seconds: 10
+    
+  pagerduty:
+    enabled: false  # Enable when integration key is configured
+    integration_key: ""  # Set via environment variable
+    
+  discord:
+    enabled: false  # Enable when webhook URL is configured
+    webhook_url: ""  # Set via environment variable
+    
+  teams:
+    enabled: false  # Enable when webhook URL is configured
+    webhook_url: ""  # Set via environment variable
+
+# Business Metrics Configuration
+business_metrics:
+  enabled: true
+  collection_interval_minutes: 15
+  retention_days: 30
+  
+  kpis:
+    daily_active_users:
+      target: 1000
+      unit: "users"
+      thresholds:
+        warning: 500
+        critical: 250
+        
+    monthly_recurring_revenue:
+      target: 50000
+      unit: "USD"
+      thresholds:
+        warning: 30000
+        critical: 20000
+        
+    user_retention_30d:
+      target: 80.0
+      unit: "%"
+      thresholds:
+        warning: 60.0
+        critical: 40.0
+        
+    api_response_time_p95:
+      target: 500
+      unit: "ms"
+      thresholds:
+        warning: 1000
+        critical: 2000
+        
+    error_rate:
+      target: 1.0
+      unit: "%"
+      thresholds:
+        warning: 2.0
+        critical: 5.0
+        
+    feature_adoption_chat:
+      target: 70.0
+      unit: "%"
+      thresholds:
+        warning: 50.0
+        critical: 30.0
+        
+    customer_acquisition_cost:
+      target: 50.0
+      unit: "USD"
+      thresholds:
+        warning: 75.0
+        critical: 100.0
+
+# Dashboard Configuration
+dashboards:
+  enabled: true
+  default_refresh_interval_seconds: 30
+  custom_dashboards_enabled: true
+  max_widgets_per_dashboard: 20
+  
+  default_dashboards:
+    system_health:
+      enabled: true
+      refresh_interval: 30
+      
+    performance:
+      enabled: true
+      refresh_interval: 30
+      
+    business_metrics:
+      enabled: true
+      refresh_interval: 60
+      
+    alerts:
+      enabled: true
+      refresh_interval: 15
+
+# Database Monitoring Configuration
+database_monitoring:
+  enabled: true
+  monitoring_interval_seconds: 60
+  metrics_retention_hours: 24
+  
+  alert_thresholds:
+    connection_utilization:
+      warning: 80
+      critical: 95
+      
+    query_duration:
+      warning_seconds: 2.0
+      critical_seconds: 5.0
+      
+    slow_queries_per_second:
+      warning: 5.0
+      critical: 10.0
+      
+    cache_hit_ratio:
+      warning: 0.8
+      critical: 0.5
+      
+    disk_usage_percent:
+      warning: 85.0
+      critical: 95.0
+      
+    deadlocks:
+      warning: 1
+      critical: 5
+      
+    memory_usage_mb:
+      warning: 8192  # 8GB
+      critical: 12288  # 12GB
+
+# Prometheus Integration
+prometheus:
+  enabled: true
+  metrics_endpoint: "/metrics"
+  scrape_interval: "15s"
+  job_name: "supernova-api"
+  
+  custom_metrics:
+    - name: "supernova_health_score"
+      type: "gauge"
+      help: "Overall system health score (0-100)"
+      
+    - name: "supernova_components_healthy"
+      type: "gauge"
+      help: "Number of healthy components"
+      
+    - name: "supernova_active_alerts"
+      type: "gauge"
+      help: "Number of active alerts"
+      labels: ["severity"]
+      
+    - name: "supernova_uptime_seconds"
+      type: "counter"
+      help: "Service uptime in seconds"
+      
+    - name: "supernova_business_kpi"
+      type: "gauge"
+      help: "Business KPI values"
+      labels: ["kpi_name", "unit"]
+
+# Logging Configuration
+logging:
+  structured_logging: true
+  log_level: "INFO"
+  
+  loggers:
+    health_monitor: "INFO"
+    performance_monitor: "INFO"
+    alert_manager: "INFO"
+    business_metrics: "INFO"
+    dashboard_manager: "INFO"
+    database_monitoring: "INFO"
+    
+  retention:
+    days: 30
+    max_size_mb: 100
+
+# Security Configuration
+security:
+  api_access_control: true
+  role_based_permissions: true
+  
+  permissions:
+    view_health: ["user", "operator", "admin"]
+    view_performance: ["user", "operator", "admin"]
+    view_business_metrics: ["operator", "admin"]
+    view_financial_metrics: ["finance", "admin"]
+    manage_alerts: ["operator", "admin"]
+    manage_dashboards: ["operator", "admin"]
+    self_healing: ["operator", "admin"]
+
+# Integration Configuration
+integrations:
+  grafana:
+    enabled: false
+    url: ""  # Set if Grafana is available
+    dashboard_import: true
+    
+  elk_stack:
+    enabled: false
+    elasticsearch_url: ""  # Set if ELK stack is available
+    log_shipping: true
+    
+  jaeger:
+    enabled: false
+    agent_host: "localhost"
+    agent_port: 6831
+    
+  docker:
+    enabled: true
+    health_check_interval: "30s"
+    health_check_timeout: "10s"
+    health_check_retries: 3
+    
+  kubernetes:
+    enabled: false  # Enable if running in Kubernetes
+    namespace: "default"
+    service_monitor: true

@@ -1,0 +1,152 @@
+{
+  "benchmark_timestamp": "2025-08-26T11:58:02.580147",
+  "performance_metrics": {
+    "sentiment_analysis": {
+      "overall_avg_time_ms": 0.03,
+      "performance_rating": "EXCELLENT",
+      "recommendation": "Performance is excellent. Monitor in production to maintain quality."
+    },
+    "data_model": {
+      "creation_time_ms": 0.0034,
+      "performance_rating": "EXCELLENT",
+      "throughput_per_second": 294378.0
+    }
+  },
+  "benchmarks": {
+    "sentiment_short_text": {
+      "metrics": {
+        "text_length": 20,
+        "iterations": 100,
+        "avg_time_ms": 0.04,
+        "min_time_ms": 0.0,
+        "max_time_ms": 3.08,
+        "std_dev_ms": 0.31,
+        "throughput_per_second": 28066.81
+      },
+      "timestamp": "2025-08-26T11:58:02.606011"
+    },
+    "sentiment_medium_text": {
+      "metrics": {
+        "text_length": 228,
+        "iterations": 50,
+        "avg_time_ms": 0.02,
+        "min_time_ms": 0.01,
+        "max_time_ms": 0.84,
+        "std_dev_ms": 0.12,
+        "throughput_per_second": 45461.78
+      },
+      "timestamp": "2025-08-26T11:58:02.607411"
+    },
+    "sentiment_long_text": {
+      "metrics": {
+        "text_length": 1308,
+        "iterations": 20,
+        "avg_time_ms": 0.02,
+        "min_time_ms": 0.01,
+        "max_time_ms": 0.29,
+        "std_dev_ms": 0.06,
+        "throughput_per_second": 44104.14
+      },
+      "timestamp": "2025-08-26T11:58:02.608060"
+    },
+    "data_model_creation": {
+      "metrics": {
+        "iterations": 1000,
+        "avg_creation_time_ms": 0.0034,
+        "creation_throughput_per_second": 294378.0
+      },
+      "timestamp": "2025-08-26T11:58:02.612701"
+    },
+    "file_read_sentiment.py": {
+      "metrics": {
+        "file_size_bytes": 44248,
+        "file_size_kb": 43.21,
+        "iterations": 50,
+        "avg_read_time_ms": 0.21,
+        "read_throughput_mb_per_second": 203.39
+      },
+      "timestamp": "2025-08-26T11:58:02.623805"
+    },
+    "file_read_sentiment_models.py": {
+      "metrics": {
+        "file_size_bytes": 15163,
+        "file_size_kb": 14.81,
+        "iterations": 50,
+        "avg_read_time_ms": 0.21,
+        "read_throughput_mb_per_second": 67.51
+      },
+      "timestamp": "2025-08-26T11:58:02.635166"
+    },
+    "file_read_timescale_setup.py": {
+      "metrics": {
+        "file_size_bytes": 36346,
+        "file_size_kb": 35.49,
+        "iterations": 50,
+        "avg_read_time_ms": 0.22,
+        "read_throughput_mb_per_second": 158.88
+      },
+      "timestamp": "2025-08-26T11:58:02.646564"
+    },
+    "file_read_workflows.py": {
+      "metrics": {
+        "file_size_bytes": 33680,
+        "file_size_kb": 32.89,
+        "iterations": 50,
+        "avg_read_time_ms": 0.19,
+        "read_throughput_mb_per_second": 169.46
+      },
+      "timestamp": "2025-08-26T11:58:02.656527"
+    },
+    "file_read_api.py": {
+      "metrics": {
+        "file_size_bytes": 38228,
+        "file_size_kb": 37.33,
+        "iterations": 50,
+        "avg_read_time_ms": 0.19,
+        "read_throughput_mb_per_second": 194.0
+      },
+      "timestamp": "2025-08-26T11:58:02.666372"
+    },
+    "json_operations": {
+      "metrics": {
+        "data_size_bytes": 364,
+        "iterations": 1000,
+        "avg_serialize_time_ms": 0.019,
+        "avg_deserialize_time_ms": 0.0166,
+        "serialize_throughput_per_second": 52560.0,
+        "deserialize_throughput_per_second": 60404.0
+      },
+      "timestamp": "2025-08-26T11:58:02.706565"
+    },
+    "memory_usage": {
+      "metrics": {
+        "status": "skipped",
+        "reason": "psutil not available"
+      },
+      "timestamp": "2025-08-26T11:58:02.707464"
+    }
+  },
+  "recommendations": [
+    {
+      "category": "Optimization",
+      "priority": "MEDIUM",
+      "text": "Consider implementing caching for frequently analyzed text patterns"
+    },
+    {
+      "category": "Scalability",
+      "priority": "MEDIUM",
+      "text": "Use async operations for I/O-bound tasks like API calls and database operations"
+    },
+    {
+      "category": "Memory",
+      "priority": "LOW",
+      "text": "Implement object pooling for high-frequency sentiment analysis operations"
+    },
+    {
+      "category": "Monitoring",
+      "priority": "MEDIUM",
+      "text": "Set up performance monitoring and alerting in production"
+    }
+  ],
+  "total_benchmark_time_seconds": 0.13
+}

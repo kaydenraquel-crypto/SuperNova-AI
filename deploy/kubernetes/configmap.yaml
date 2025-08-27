@@ -1,0 +1,371 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supernova-config
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: config
+    environment: production
+data:
+  # Application Configuration
+  SUPERNOVA_ENV: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  
+  # Database Configuration
+  DATABASE_ENGINE: "postgresql"
+  DB_POOL_SIZE: "20"
+  DB_MAX_OVERFLOW: "30"
+  DB_POOL_TIMEOUT: "30"
+  DB_POOL_RECYCLE: "3600"
+  DB_SSL_REQUIRED: "true"
+  
+  # TimescaleDB Configuration
+  TIMESCALE_ENABLED: "true"
+  TIMESCALE_PORT: "5432"
+  TIMESCALE_CHUNK_INTERVAL: "1 day"
+  TIMESCALE_COMPRESSION_ENABLED: "true"
+  TIMESCALE_COMPRESSION_AFTER: "7 days"
+  TIMESCALE_RETENTION_POLICY: "7 years"
+  TIMESCALE_ENABLE_AGGREGATES: "true"
+  TIMESCALE_HOURLY_AGGREGATES: "true"
+  TIMESCALE_DAILY_AGGREGATES: "true"
+  TIMESCALE_WEEKLY_AGGREGATES: "true"
+  
+  # Cache Configuration
+  CACHE_BACKEND: "redis"
+  CACHE_DEFAULT_TTL: "3600"
+  REDIS_MAX_CONNECTIONS: "50"
+  REDIS_SOCKET_TIMEOUT: "5"
+  
+  # LLM Configuration
+  LLM_ENABLED: "true"
+  LLM_PROVIDER: "openai"
+  LLM_MODEL: "gpt-4"
+  LLM_TEMPERATURE: "0.2"
+  LLM_MAX_TOKENS: "4000"
+  LLM_TIMEOUT: "60"
+  LLM_MAX_RETRIES: "3"
+  LLM_RETRY_DELAY: "2.0"
+  LLM_STREAMING: "true"
+  LLM_CONTEXT_ENHANCEMENT: "true"
+  LLM_CACHE_ENABLED: "true"
+  LLM_CACHE_TTL: "3600"
+  LLM_COST_TRACKING: "true"
+  LLM_FALLBACK_ENABLED: "true"
+  LLM_HEALTH_CHECK_ENABLED: "true"
+  LLM_HEALTH_CHECK_INTERVAL: "300"
+  
+  # Security Configuration
+  SSL_REQUIRED: "true"
+  TLS_VERSION_MIN: "1.2"
+  TLS_VERSION_PREFERRED: "1.3"
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_PER_MINUTE: "100"
+  RATE_LIMIT_PER_HOUR: "1000"
+  RATE_LIMIT_PER_DAY: "10000"
+  API_KEY_ENCRYPTION_ENABLED: "true"
+  MFA_ENABLED: "true"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  
+  # Monitoring Configuration
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "9090"
+  HEALTH_CHECK_ENABLED: "true"
+  HEALTH_CHECK_INTERVAL: "60"
+  ALERTING_ENABLED: "true"
+  PERFORMANCE_MONITORING_ENABLED: "true"
+  
+  # Compliance Configuration
+  GDPR_COMPLIANCE_ENABLED: "true"
+  CCPA_COMPLIANCE_ENABLED: "true"
+  SOC2_COMPLIANCE_ENABLED: "true"
+  AUDIT_LOGGING_ENABLED: "true"
+  AUDIT_LOG_RETENTION_DAYS: "2555"
+  
+  # Feature Flags
+  ENABLE_SENTIMENT_ANALYSIS: "true"
+  ENABLE_BACKTESTING: "true"
+  ENABLE_CHAT_INTERFACE: "true"
+  ENABLE_API_ENDPOINTS: "true"
+  ENABLE_PREFECT_WORKFLOWS: "true"
+  ENABLE_VECTORBT_STRATEGIES: "true"
+  ENABLE_TIMESCALE_ANALYTICS: "true"
+  
+  # Performance Settings
+  MAX_CONCURRENT_REQUESTS: "200"
+  ASYNC_TIMEOUT: "120"
+  BACKGROUND_TASKS_ENABLED: "true"
+  TASK_QUEUE_SIZE: "2000"
+  MAX_CONCURRENT_TASKS: "50"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supernova-nginx-config
+  namespace: supernova-production
+  labels:
+    app: supernova-ai
+    component: nginx
+    environment: production
+data:
+  nginx.conf: |
+    upstream supernova_backend {
+        least_conn;
+        server supernova-app-0.supernova-app:8000 weight=1 max_fails=3 fail_timeout=30s;
+        server supernova-app-1.supernova-app:8000 weight=1 max_fails=3 fail_timeout=30s;
+        server supernova-app-2.supernova-app:8000 weight=1 max_fails=3 fail_timeout=30s;
+    }
+    
+    upstream supernova_websocket {
+        least_conn;
+        server supernova-app-0.supernova-app:8001 weight=1 max_fails=3 fail_timeout=30s;
+        server supernova-app-1.supernova-app:8001 weight=1 max_fails=3 fail_timeout=30s;
+        server supernova-app-2.supernova-app:8001 weight=1 max_fails=3 fail_timeout=30s;
+    }
+    
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    limit_req_zone $binary_remote_addr zone=auth:10m rate=5r/s;
+    
+    server {
+        listen 80;
+        server_name api.supernova-ai.com;
+        return 301 https://$server_name$request_uri;
+    }
+    
+    server {
+        listen 443 ssl http2;
+        server_name api.supernova-ai.com;
+        
+        # SSL Configuration
+        ssl_certificate /etc/ssl/certs/supernova.crt;
+        ssl_certificate_key /etc/ssl/private/supernova.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+        ssl_prefer_server_ciphers off;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        
+        # Security Headers
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        
+        # API Routes
+        location / {
+            limit_req zone=api burst=20 nodelay;
+            
+            proxy_pass http://supernova_backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+            
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+            proxy_busy_buffers_size 8k;
+        }
+        
+        # WebSocket Routes
+        location /ws {
+            proxy_pass http://supernova_websocket;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            proxy_connect_timeout 7d;
+            proxy_send_timeout 7d;
+            proxy_read_timeout 7d;
+        }
+        
+        # Health Check
+        location /health {
+            proxy_pass http://supernova_backend/health;
+            access_log off;
+        }
+        
+        # Authentication endpoints with stricter rate limiting
+        location ~ ^/(auth|login|register) {
+            limit_req zone=auth burst=5 nodelay;
+            
+            proxy_pass http://supernova_backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supernova-prometheus-config
+  namespace: supernova-monitoring
+  labels:
+    app: supernova-ai
+    component: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    
+    rule_files:
+      - "supernova_alerts.yml"
+    
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+    
+    scrape_configs:
+      - job_name: 'supernova-app'
+        static_configs:
+          - targets:
+            - supernova-app.supernova-production:9090
+        scrape_interval: 15s
+        metrics_path: /metrics
+        
+      - job_name: 'supernova-nginx'
+        static_configs:
+          - targets:
+            - nginx-service.supernova-production:9113
+        
+      - job_name: 'redis'
+        static_configs:
+          - targets:
+            - redis-service.supernova-production:9121
+      
+      - job_name: 'postgresql'
+        static_configs:
+          - targets:
+            - postgres-exporter.supernova-production:9187
+      
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: default;kubernetes;https
+      
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+      
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+  supernova_alerts.yml: |
+    groups:
+      - name: supernova_alerts
+        rules:
+          - alert: SuperNovaAppDown
+            expr: up{job="supernova-app"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "SuperNova application is down"
+              description: "SuperNova application has been down for more than 1 minute"
+          
+          - alert: HighMemoryUsage
+            expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage detected"
+              description: "Memory usage is above 90% for more than 5 minutes"
+          
+          - alert: HighCPUUsage
+            expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage detected"
+              description: "CPU usage is above 80% for more than 5 minutes"
+          
+          - alert: DatabaseConnectionFailure
+            expr: supernova_database_connections_failed_total > 10
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Database connection failures"
+              description: "Multiple database connection failures detected"
+          
+          - alert: LLMAPIFailures
+            expr: rate(supernova_llm_requests_failed_total[5m]) > 0.1
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "LLM API failures detected"
+              description: "High rate of LLM API failures detected"
+          
+          - alert: HighLatency
+            expr: histogram_quantile(0.95, rate(supernova_http_request_duration_seconds_bucket[5m])) > 2
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency detected"
+              description: "95th percentile latency is above 2 seconds"

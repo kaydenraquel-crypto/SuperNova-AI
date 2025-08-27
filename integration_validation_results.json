@@ -1,0 +1,206 @@
+{
+  "timestamp": "2025-08-26T15:03:14.149508",
+  "validation_id": "integration_20250826_150314",
+  "tests": {
+    "architecture": {
+      "status": "PASSED",
+      "details": {
+        "Backend Core": {
+          "found": [
+            "supernova/__init__.py",
+            "supernova/api.py",
+            "supernova/db.py",
+            "supernova/config.py",
+            "supernova/schemas.py"
+          ],
+          "missing": []
+        },
+        "Security Framework": {
+          "found": [
+            "supernova/auth.py",
+            "supernova/security_config.py",
+            "supernova/encryption.py",
+            "supernova/input_validation.py",
+            "supernova/rate_limiting.py"
+          ],
+          "missing": []
+        },
+        "Performance & Monitoring": {
+          "found": [
+            "supernova/performance_monitor.py",
+            "supernova/cache_manager.py",
+            "supernova/async_processor.py"
+          ],
+          "missing": []
+        },
+        "Communication": {
+          "found": [
+            "supernova/chat.py",
+            "supernova/websocket_handler.py",
+            "supernova/conversation_memory.py"
+          ],
+          "missing": []
+        },
+        "Frontend": {
+          "found": [
+            "frontend/package.json",
+            "frontend/src/App.tsx",
+            "frontend/src/index.tsx",
+            "frontend/webpack.config.js"
+          ],
+          "missing": []
+        },
+        "Configuration": {
+          "found": [
+            "main.py",
+            "requirements.txt",
+            "pytest.ini"
+          ],
+          "missing": []
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "total_files": 23,
+        "found_files": 23,
+        "missing_files": 0
+      }
+    },
+    "import_dependencies": {
+      "status": "FAILED",
+      "details": {
+        "supernova.api": "FAILED: No module named 'fastapi'",
+        "supernova.db": "FAILED: No module named 'sqlalchemy'",
+        "supernova.config": "FAILED: No module named 'dotenv'",
+        "supernova.schemas": "FAILED: No module named 'pydantic'",
+        "supernova.auth": "FAILED: No module named 'pyotp'",
+        "supernova.chat": "FAILED: No module named 'pydantic'"
+      },
+      "errors": [
+        "Failed to import supernova.api: No module named 'fastapi'",
+        "Failed to import supernova.db: No module named 'sqlalchemy'",
+        "Failed to import supernova.config: No module named 'dotenv'",
+        "Failed to import supernova.schemas: No module named 'pydantic'",
+        "Failed to import supernova.auth: No module named 'pyotp'",
+        "Failed to import supernova.chat: No module named 'pydantic'"
+      ],
+      "warnings": []
+    },
+    "configuration": {
+      "status": "PASSED",
+      "details": {
+        "requirements.txt": "Found (1727 chars)",
+        "main.py": "Found (300 chars)",
+        "frontend/package.json": "Valid JSON",
+        "pytest.ini": "Found (1119 chars)",
+        "environment_variables": {
+          "SUPERNOVA_DB_URL": "Not Set",
+          "SECRET_KEY": "Not Set",
+          "API_KEY": "Not Set"
+        }
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "frontend_structure": {
+      "status": "PASSED",
+      "details": {
+        "package.json": "Found",
+        "main_app": "Found",
+        "index": "Found",
+        "webpack_config": "Found",
+        "components": {
+          "frontend/src/components/layout/MainLayout.tsx": "Found",
+          "frontend/src/components/dashboard/DashboardPage.tsx": "Missing",
+          "frontend/src/components/common/LoadingScreen.tsx": "Found"
+        },
+        "services": "Found",
+        "theme": "Found",
+        "mui_dependencies": {
+          "count": 7,
+          "packages": [
+            "@mui/material",
+            "@mui/icons-material",
+            "@mui/lab",
+            "@mui/x-data-grid",
+            "@mui/x-data-grid-pro"
+          ]
+        }
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "security_framework": {
+      "status": "PASSED",
+      "details": {
+        "authentication": {
+          "status": "Found",
+          "size": 23284,
+          "security_patterns": [
+            "hash",
+            "token",
+            "auth",
+            "validate"
+          ]
+        },
+        "security_config": {
+          "status": "Found",
+          "size": 13544,
+          "security_patterns": [
+            "hash",
+            "encrypt",
+            "token",
+            "auth",
+            "validate"
+          ]
+        },
+        "encryption": {
+          "status": "Found",
+          "size": 28001,
+          "security_patterns": [
+            "hash",
+            "encrypt",
+            "token",
+            "validate"
+          ]
+        },
+        "input_validation": {
+          "status": "Found",
+          "size": 22229,
+          "security_patterns": [
+            "token",
+            "validate"
+          ]
+        },
+        "rate_limiting": {
+          "status": "Found",
+          "size": 30165,
+          "security_patterns": [
+            "hash",
+            "token",
+            "auth"
+          ]
+        },
+        "web_security": {
+          "status": "Found",
+          "size": 29194,
+          "security_patterns": [
+            "hash",
+            "token",
+            "auth",
+            "validate"
+          ]
+        }
+      },
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "summary": {
+    "total_tests": 5,
+    "passed": 4,
+    "failed": 1,
+    "warnings": 0
+  }
+}

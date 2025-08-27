@@ -1,0 +1,272 @@
+{
+  "validation_timestamp": "2025-08-26T11:56:33.384308",
+  "validation_type": "structure_and_code",
+  "test_results": {
+    "file_sentiment.py": {
+      "status": "passed",
+      "details": {
+        "description": "Core sentiment analysis module"
+      },
+      "timestamp": "2025-08-26T11:56:33.386830"
+    },
+    "file_sentiment_models.py": {
+      "status": "passed",
+      "details": {
+        "description": "TimescaleDB data models"
+      },
+      "timestamp": "2025-08-26T11:56:33.387009"
+    },
+    "file_timescale_setup.py": {
+      "status": "passed",
+      "details": {
+        "description": "Database setup and management"
+      },
+      "timestamp": "2025-08-26T11:56:33.387157"
+    },
+    "file_workflows.py": {
+      "status": "passed",
+      "details": {
+        "description": "Prefect workflow integration"
+      },
+      "timestamp": "2025-08-26T11:56:33.387290"
+    },
+    "file_api.py": {
+      "status": "passed",
+      "details": {
+        "description": "API endpoints (should contain sentiment endpoints)"
+      },
+      "timestamp": "2025-08-26T11:56:33.387430"
+    },
+    "sentiment_components": {
+      "status": "passed",
+      "details": {
+        "found": 10
+      },
+      "timestamp": "2025-08-26T11:56:33.389468"
+    },
+    "sentiment_social_integration": {
+      "status": "passed",
+      "details": {
+        "features_found": [
+          "X_BEARER_TOKEN",
+          "REDDIT_CLIENT_ID",
+          "tweepy",
+          "praw"
+        ],
+        "note": "Social media integration available"
+      },
+      "timestamp": "2025-08-26T11:56:33.389513"
+    },
+    "sentiment_nlp_features": {
+      "status": "passed",
+      "details": {
+        "features_found": [
+          "finbert",
+          "vader",
+          "spacy",
+          "transformers"
+        ],
+        "note": "Advanced NLP features available"
+      },
+      "timestamp": "2025-08-26T11:56:33.391469"
+    },
+    "sentiment_models_classes": {
+      "status": "passed",
+      "details": {
+        "found": 5
+      },
+      "timestamp": "2025-08-26T11:56:33.392100"
+    },
+    "sentiment_models_functions": {
+      "status": "passed",
+      "details": {
+        "found": [
+          "get_timescale_engine",
+          "get_timescale_session",
+          "get_timescale_url",
+          "from_sentiment_signal"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.392194"
+    },
+    "sentiment_models_sqlalchemy": {
+      "status": "passed",
+      "details": {
+        "features_found": [
+          "DeclarativeBase",
+          "mapped_column",
+          "Mapped",
+          "TIMESTAMP",
+          "JSONB"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.392211"
+    },
+    "timescale_setup_components": {
+      "status": "passed",
+      "details": {
+        "found": 8
+      },
+      "timestamp": "2025-08-26T11:56:33.441368"
+    },
+    "timescale_setup_features": {
+      "status": "passed",
+      "details": {
+        "timescale_features": [
+          "create_hypertable",
+          "add_compression_policy",
+          "add_retention_policy",
+          "continuous_aggregate",
+          "time_bucket",
+          "timescaledb_information"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.441434"
+    },
+    "workflows_prefect": {
+      "status": "passed",
+      "details": {
+        "found": 9
+      },
+      "timestamp": "2025-08-26T11:56:33.478664"
+    },
+    "workflows_error_handling": {
+      "status": "passed",
+      "details": {
+        "error_handling_found": [
+          "try:",
+          "PREFECT_AVAILABLE",
+          "is_prefect_available"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.478741"
+    },
+    "api_sentiment_endpoints": {
+      "status": "passed",
+      "details": {
+        "found": 6
+      },
+      "timestamp": "2025-08-26T11:56:33.510140"
+    },
+    "api_timescale_integration": {
+      "status": "passed",
+      "details": {
+        "timescale_features": [
+          "get_timescale_session",
+          "SentimentData",
+          "SentimentAggregates",
+          "is_timescale_available",
+          "TimescaleSession"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.510196"
+    },
+    "schemas_sentiment": {
+      "status": "passed",
+      "details": {
+        "found": [
+          "SentimentDataPoint",
+          "SentimentHistoryRequest",
+          "SentimentHistoryResponse",
+          "SentimentAggregateRequest",
+          "SentimentAggregateResponse",
+          "TimescaleHealthResponse",
+          "BulkSentimentInsertRequest"
+        ]
+      },
+      "timestamp": "2025-08-26T11:56:33.556898"
+    },
+    "code_quality_has_docstrings": {
+      "status": "passed",
+      "details": {
+        "percentage": 75.0,
+        "files": 3
+      },
+      "timestamp": "2025-08-26T11:56:33.572508"
+    },
+    "code_quality_has_type_hints": {
+      "status": "passed",
+      "details": {
+        "percentage": 100.0,
+        "files": 4
+      },
+      "timestamp": "2025-08-26T11:56:33.572545"
+    },
+    "code_quality_has_error_handling": {
+      "status": "passed",
+      "details": {
+        "percentage": 100.0,
+        "files": 4
+      },
+      "timestamp": "2025-08-26T11:56:33.572561"
+    },
+    "code_quality_has_logging": {
+      "status": "warning",
+      "details": {
+        "percentage": 50.0,
+        "files": 2
+      },
+      "timestamp": "2025-08-26T11:56:33.572576"
+    }
+  },
+  "summary": {
+    "overall_status": "PASSED",
+    "total_tests": 22,
+    "passed_tests": 21,
+    "failed_tests": 0,
+    "warning_tests": 1,
+    "success_rate": 95.45454545454545,
+    "validation_duration": 0.188323,
+    "component_results": {
+      "file_structure": true,
+      "sentiment_module": true,
+      "sentiment_models": true,
+      "timescale_setup": true,
+      "workflows": true,
+      "api_endpoints": true,
+      "schemas": true,
+      "code_quality": true
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "MEDIUM",
+      "category": "Improvements",
+      "text": "Address 1 warnings for better functionality",
+      "details": [
+        "code_quality_has_logging"
+      ]
+    },
+    {
+      "priority": "LOW",
+      "category": "Monitoring",
+      "text": "Set up monitoring and alerting for sentiment analysis pipeline",
+      "details": [
+        "Monitor API response times",
+        "Track sentiment data quality",
+        "Set up error alerts"
+      ]
+    },
+    {
+      "priority": "LOW",
+      "category": "Testing",
+      "text": "Implement comprehensive testing suite",
+      "details": [
+        "Unit tests for all components",
+        "Integration tests",
+        "Performance benchmarks"
+      ]
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "Documentation",
+      "text": "Create deployment and configuration documentation",
+      "details": [
+        "Installation guide",
+        "Configuration reference",
+        "API documentation"
+      ]
+    }
+  ],
+  "issues": []
+}

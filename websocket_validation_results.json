@@ -1,0 +1,210 @@
+{
+  "timestamp": "2025-08-26T15:07:39.435728",
+  "validation_id": "websocket_20250826_150739",
+  "websocket_tests": {
+    "websocket_infrastructure": {
+      "status": "PASSED",
+      "details": {
+        "websocket_handler": {
+          "file_exists": true,
+          "file_size": 26592,
+          "websocket_patterns": {
+            "websocket_support": true,
+            "async_support": true,
+            "connection_management": true,
+            "message_handling": true,
+            "real_time": true,
+            "chat_features": true
+          },
+          "websocket_score": 100.0
+        },
+        "websocket_optimizer": {
+          "file_exists": true,
+          "file_size": 34648,
+          "websocket_patterns": {
+            "websocket_support": true,
+            "async_support": true,
+            "connection_management": true,
+            "message_handling": true,
+            "real_time": true,
+            "chat_features": true
+          },
+          "websocket_score": 100.0
+        },
+        "chat_handler": {
+          "file_exists": true,
+          "file_size": 35946,
+          "websocket_patterns": {
+            "websocket_support": true,
+            "async_support": true,
+            "connection_management": false,
+            "message_handling": true,
+            "real_time": true,
+            "chat_features": true
+          },
+          "websocket_score": 83.33333333333334
+        },
+        "api_websocket_routes": {
+          "file_exists": true,
+          "file_size": 92534,
+          "websocket_patterns": {
+            "websocket_support": true,
+            "async_support": true,
+            "connection_management": true,
+            "message_handling": true,
+            "real_time": true,
+            "chat_features": true
+          },
+          "websocket_score": 100.0
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "overall_websocket_score": 95.83333333333334
+    },
+    "websocket_message_types": {
+      "status": "PASSED",
+      "details": {
+        "supernova/websocket_handler.py": {
+          "file_exists": true,
+          "message_types_found": [
+            "chat",
+            "typing",
+            "presence",
+            "notification",
+            "system",
+            "market_update",
+            "chart_data",
+            "voice_message",
+            "file_share"
+          ],
+          "message_type_count": 9
+        },
+        "supernova/chat.py": {
+          "file_exists": true,
+          "message_types_found": [
+            "chat",
+            "typing",
+            "system"
+          ],
+          "message_type_count": 3
+        },
+        "supernova/schemas.py": {
+          "file_exists": true,
+          "message_types_found": [
+            "chat",
+            "typing",
+            "presence",
+            "notification",
+            "system",
+            "market_update",
+            "chart_data",
+            "voice_message",
+            "file_share"
+          ],
+          "message_type_count": 9
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "total_message_types": 9,
+        "supported_message_types": 9,
+        "message_type_coverage": "9/9",
+        "supported_types": [
+          "market_update",
+          "notification",
+          "chart_data",
+          "typing",
+          "file_share",
+          "chat",
+          "voice_message",
+          "presence",
+          "system"
+        ]
+      }
+    },
+    "connection_management": {
+      "status": "PASSED",
+      "details": {
+        "supernova/websocket_handler.py": {
+          "file_exists": true,
+          "connection_features": {
+            "connect_handling": true,
+            "disconnect_handling": true,
+            "error_handling": true,
+            "connection_tracking": true,
+            "heartbeat": true,
+            "authentication": false
+          },
+          "connection_management_score": 83.33333333333334
+        },
+        "supernova/websocket_optimizer.py": {
+          "file_exists": true,
+          "connection_features": {
+            "connect_handling": true,
+            "disconnect_handling": true,
+            "error_handling": true,
+            "connection_tracking": true,
+            "heartbeat": true,
+            "authentication": true
+          },
+          "connection_management_score": 100.0
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "total_connection_features": 11,
+        "files_with_connection_mgmt": 2,
+        "connection_coverage": "2/2"
+      }
+    },
+    "frontend_websocket_integration": {
+      "status": "PASSED",
+      "details": {
+        "frontend/src/hooks/useWebSocket.tsx": {
+          "file_exists": true,
+          "websocket_patterns_found": [
+            "websocket",
+            "socket.io",
+            "useWebSocket",
+            "WebSocket"
+          ],
+          "websocket_implementation_count": 57
+        },
+        "frontend/src/services/api.ts": {
+          "file_exists": true,
+          "websocket_patterns_found": [],
+          "websocket_implementation_count": 0
+        },
+        "frontend/src/components/chat": {
+          "file_exists": false,
+          "websocket_patterns_found": [],
+          "websocket_implementation_count": 0
+        },
+        "frontend/package.json": {
+          "file_exists": true,
+          "websocket_patterns_found": [
+            "socket.io"
+          ],
+          "websocket_implementation_count": 1
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "total_websocket_implementations": 58,
+        "files_with_websocket": 2,
+        "frontend_websocket_coverage": "2/4"
+      }
+    }
+  },
+  "summary": {
+    "total_tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "warnings": 0,
+    "websocket_score": 100.0
+  }
+}

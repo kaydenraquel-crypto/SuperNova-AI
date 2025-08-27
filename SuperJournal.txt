@@ -1,0 +1,126 @@
+[2025-08-26T16:01:10.309794Z] startup
+{"service": "api"}
+[2025-08-26T16:02:10.528101Z] intake
+{"user_id": 1, "profile_id": 1, "risk": 50}
+
+---
+
+### [Timestamp UTC]
+2025-08-26T16:02:10.528101Z
+
+**Session ID:** SN-E7BFA39A
+**Supervisor:** AutoLogger
+**Sub-Agents Used (≤5):**
+- IntakeAgent
+
+### Actions Performed
+1. Created user and profile
+2. Computed risk score
+
+### Results
+- profile_id=1
+- risk_score=50
+
+### Suggestions / Next Steps
+- Review constraints & objectives for suitability
+
+### Meta
+{
+  "endpoint": "/intake",
+  "user_id": 1,
+  "profile_id": 1
+}
+
+[2025-08-26T16:02:32.110189Z] advice
+{"profile_id": 1, "symbol": "AAPL", "action": "hold", "conf": 0.1}
+
+---
+
+### [Timestamp UTC]
+2025-08-26T16:02:32.110189Z
+
+**Session ID:** SN-EFA677F1
+**Supervisor:** AutoLogger
+**Sub-Agents Used (≤5):**
+- StrategyAgent
+- RiskBlendAgent
+
+### Actions Performed
+1. Evaluated advice for AAPL (1h)
+
+### Results
+- action=hold
+- confidence=0.10
+
+### Suggestions / Next Steps
+- Backtest this configuration overnight
+
+### Meta
+{
+  "endpoint": "/advice",
+  "profile_id": 1,
+  "symbol": "AAPL",
+  "timeframe": "1h"
+}
+
+[2025-08-26T16:02:53.621566Z] backtest
+{"template": "momentum", "metrics": {"final_equity": 10000.0, "CAGR": 0.0, "Sharpe": 0.0, "MaxDrawdown": 0.0, "WinRate": 0.0, "n_trades_est": 0}}
+
+---
+
+### [Timestamp UTC]
+2025-08-26T16:02:53.621566Z
+
+**Session ID:** SN-AE62602B
+**Supervisor:** AutoLogger
+**Sub-Agents Used (≤5):**
+- BacktestAgent
+
+### Actions Performed
+1. Backtested momentum on AAPL (1d)
+
+### Results
+- {"final_equity": 10000.0, "CAGR": 0.0, "Sharpe": 0.0, "MaxDrawdown": 0.0, "WinRate": 0.0, "n_trades_est": 0}
+
+### Suggestions / Next Steps
+- Store metrics and schedule parameter sweep
+
+### Meta
+{
+  "endpoint": "/backtest",
+  "symbol": "AAPL",
+  "timeframe": "1d",
+  "template": "momentum"
+}
+
+[2025-08-26T16:03:09.248656Z] intake
+{"user_id": 2, "profile_id": 2, "risk": 50}
+
+---
+
+### [Timestamp UTC]
+2025-08-26T16:03:09.248656Z
+
+**Session ID:** SN-D9E50B2D
+**Supervisor:** AutoLogger
+**Sub-Agents Used (≤5):**
+- IntakeAgent
+
+### Actions Performed
+1. Created user and profile
+2. Computed risk score
+
+### Results
+- profile_id=2
+- risk_score=50
+
+### Suggestions / Next Steps
+- Review constraints & objectives for suitability
+
+### Meta
+{
+  "endpoint": "/intake",
+  "user_id": 2,
+  "profile_id": 2
+}
+

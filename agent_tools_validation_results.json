@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-08-26T12:49:24.066863",
+  "test_results": {
+    "imports": {
+      "status": "FAILED",
+      "details": {
+        "import_error": "No module named 'httpx'"
+      }
+    },
+    "tool_creation": {
+      "status": "FAILED",
+      "details": {
+        "error": "No module named 'httpx'"
+      }
+    },
+    "individual_tools": {
+      "status": "SKIPPED",
+      "details": {
+        "reason": "LangChain not available or tools not created"
+      }
+    },
+    "tool_integration": {
+      "status": "SKIPPED",
+      "details": {
+        "reason": "LangChain not available or tools not created"
+      }
+    },
+    "error_handling": {
+      "status": "SKIPPED",
+      "details": {
+        "reason": "LangChain not available or tools not created"
+      }
+    },
+    "performance": {
+      "status": "SKIPPED",
+      "details": {
+        "reason": "LangChain not available or tools not created"
+      }
+    },
+    "memory_usage": {
+      "status": "SKIPPED",
+      "details": {
+        "reason": "psutil not available for memory testing"
+      }
+    }
+  },
+  "performance_metrics": {},
+  "error_summary": {},
+  "recommendations": [
+    "CRITICAL: Fix import issues before deploying agent tools",
+    "WARNING: LangChain not available - agent will run in fallback mode",
+    "FALLBACK: System will operate in limited mode without LangChain",
+    "TEST: Run integration tests with actual LLM providers",
+    "MONITOR: Set up performance monitoring for production deployment"
+  ],
+  "total_validation_time": 0.009511947631835938,
+  "validation_status": "COMPLETED"
+}

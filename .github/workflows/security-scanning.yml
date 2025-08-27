@@ -1,0 +1,485 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily
+    - cron: '0 6 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Static Application Security Testing (SAST)
+  sast-analysis:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install security tools
+      run: |
+        pip install bandit safety semgrep
+
+    - name: Run Bandit (Python security linter)
+      run: |
+        bandit -r supernova/ -f json -o bandit-results.json
+        bandit -r supernova/ -f txt -o bandit-results.txt
+      continue-on-error: true
+
+    - name: Run Safety (dependency vulnerability check)
+      run: |
+        safety check --json --output safety-results.json
+        safety check --output safety-results.txt
+      continue-on-error: true
+
+    - name: Run Semgrep (advanced static analysis)
+      run: |
+        semgrep --config=auto --json --output=semgrep-results.json supernova/
+        semgrep --config=auto --text --output=semgrep-results.txt supernova/
+      continue-on-error: true
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: sast-results
+        path: |
+          bandit-results.*
+          safety-results.*
+          semgrep-results.*
+
+  # Dependency Scanning
+  dependency-scanning:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install pip-audit cyclonedx-bom
+
+    - name: Generate SBOM (Software Bill of Materials)
+      run: |
+        pip install -r requirements.txt
+        cyclonedx-py -r -o supernova-sbom.json
+
+    - name: Run pip-audit
+      run: |
+        pip-audit --format=json --output=pip-audit-results.json
+        pip-audit --format=text --output=pip-audit-results.txt
+      continue-on-error: true
+
+    - name: Upload dependency scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: dependency-scan-results
+        path: |
+          supernova-sbom.json
+          pip-audit-results.*
+
+  # Container Security Scanning
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        docker build -t supernova:latest .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'supernova:latest'
+        format: 'json'
+        output: 'trivy-results.json'
+
+    - name: Run Trivy (table format)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'supernova:latest'
+        format: 'table'
+        output: 'trivy-results.txt'
+
+    - name: Upload container security results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: container-security-results
+        path: |
+          trivy-results.*
+
+  # Dynamic Application Security Testing (DAST)
+  dast-analysis:
+    name: Dynamic Security Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[security-test]')
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: security_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Start application
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/security_test
+        SECRET_KEY: test_secret_key_for_security_testing
+      run: |
+        python main.py &
+        echo $! > app.pid
+        sleep 10
+
+    - name: Wait for application startup
+      run: |
+        timeout 30 bash -c 'until curl -f http://localhost:8000/health 2>/dev/null; do sleep 1; done' || \
+        timeout 30 bash -c 'until curl -f http://localhost:8000/ 2>/dev/null; do sleep 1; done'
+
+    - name: OWASP ZAP Full Scan
+      uses: zaproxy/action-full-scan@v0.7.0
+      with:
+        target: 'http://localhost:8000'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a -j'
+
+    - name: Run custom security tests
+      run: |
+        pytest test_suites/test_security_comprehensive.py \
+               -v -m "security" \
+               --junit-xml=security-test-results.xml
+
+    - name: Stop application
+      run: |
+        if [ -f app.pid ]; then
+          kill $(cat app.pid)
+        fi
+
+    - name: Upload DAST results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: dast-results
+        path: |
+          report_html.html
+          report_json.json
+          report_md.md
+          security-test-results.xml
+
+  # Infrastructure Security
+  infrastructure-security:
+    name: Infrastructure Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Checkov (Infrastructure as Code security)
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: dockerfile,github_configuration,secrets
+        output_format: json,cli
+        output_file_path: checkov-results.json
+
+    - name: Scan for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --json --output=trufflehog-results.json
+
+    - name: Upload infrastructure security results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: infrastructure-security-results
+        path: |
+          checkov-results.*
+          trufflehog-results.json
+
+  # License Compliance
+  license-compliance:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install license checking tools
+      run: |
+        pip install pip-licenses licensecheck
+
+    - name: Check Python dependencies licenses
+      run: |
+        pip install -r requirements.txt
+        pip-licenses --format=json --output-file=python-licenses.json
+        pip-licenses --format=csv --output-file=python-licenses.csv
+        pip-licenses --format=plain --output-file=python-licenses.txt
+
+    - name: Check for incompatible licenses
+      run: |
+        licensecheck --zero --format=json requirements.txt > license-compatibility.json || true
+        licensecheck --zero --format=text requirements.txt > license-compatibility.txt || true
+
+    - name: Upload license compliance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: license-compliance-results
+        path: |
+          python-licenses.*
+          license-compatibility.*
+
+  # Security Report Generation
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [
+      sast-analysis,
+      dependency-scanning,
+      container-security,
+      infrastructure-security,
+      license-compliance
+    ]
+    if: always()
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all security artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: security-artifacts/
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install report generation dependencies
+      run: |
+        pip install jinja2 markdown json2html
+
+    - name: Generate comprehensive security report
+      run: |
+        python test_suites/generate_security_report.py \
+               --artifacts-dir security-artifacts/ \
+               --output-dir security-reports/ \
+               --format html,json,markdown
+
+    - name: Calculate security score
+      run: |
+        python -c "
+        import json
+        import os
+        
+        def count_issues(file_path):
+            if not os.path.exists(file_path):
+                return 0
+            try:
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    return len(data.get('results', data.get('issues', data.get('vulnerabilities', []))))
+                return len(data) if isinstance(data, list) else 0
+            except:
+                return 0
+        
+        # Count issues from various tools
+        bandit_issues = count_issues('security-artifacts/sast-results/bandit-results.json')
+        safety_issues = count_issues('security-artifacts/dependency-scan-results/safety-results.json')
+        trivy_issues = count_issues('security-artifacts/container-security-results/trivy-results.json')
+        
+        total_issues = bandit_issues + safety_issues + trivy_issues
+        
+        # Calculate security score (100 - weighted issues)
+        security_score = max(0, 100 - (bandit_issues * 2 + safety_issues * 5 + trivy_issues * 3))
+        
+        print(f'Security Score: {security_score}/100')
+        print(f'Total Issues: {total_issues}')
+        print(f'  - Bandit (SAST): {bandit_issues}')
+        print(f'  - Safety (Dependencies): {safety_issues}')
+        print(f'  - Trivy (Container): {trivy_issues}')
+        
+        # Save score for later use
+        with open('security-score.txt', 'w') as f:
+            f.write(str(security_score))
+        
+        # Fail if critical security issues
+        if security_score < 70:
+            print('❌ Security score too low for production')
+            exit(1)
+        elif security_score < 85:
+            print('⚠️ Security score adequate but needs improvement')
+        else:
+            print('✅ Good security score')
+        "
+
+    - name: Upload comprehensive security report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: comprehensive-security-report
+        path: |
+          security-reports/
+          security-score.txt
+
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Read security score
+          let securityScore = 'Unknown';
+          if (fs.existsSync('security-score.txt')) {
+            securityScore = fs.readFileSync('security-score.txt', 'utf8').trim();
+          }
+          
+          // Read security summary
+          let securitySummary = 'Security scan completed.';
+          if (fs.existsSync('security-reports/summary.md')) {
+            securitySummary = fs.readFileSync('security-reports/summary.md', 'utf8');
+          }
+          
+          const body = `## 🔐 Security Scan Results
+          
+          **Security Score: ${securityScore}/100**
+          
+          ${securitySummary}
+          
+          <details>
+          <summary>View detailed security report</summary>
+          
+          Full security reports are available in the build artifacts.
+          
+          </details>`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+
+  # Security Policy Check
+  security-policy:
+    name: Security Policy Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check for security policy files
+      run: |
+        echo "Checking for security policy compliance..."
+        
+        # Check for required security files
+        files=(
+          "SECURITY.md"
+          ".github/SECURITY.md"
+          "docs/SECURITY.md"
+          ".security/policy.md"
+        )
+        
+        security_file_found=false
+        for file in "${files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ Found security policy: $file"
+            security_file_found=true
+            break
+          fi
+        done
+        
+        if [ "$security_file_found" = false ]; then
+          echo "⚠️ No security policy found. Consider adding SECURITY.md"
+        fi
+        
+        # Check for security configuration files
+        if [ -f ".github/dependabot.yml" ]; then
+          echo "✅ Dependabot configuration found"
+        else
+          echo "⚠️ Consider adding Dependabot configuration"
+        fi
+        
+        # Check for security headers configuration
+        if grep -r "security.*header" . --include="*.py" --include="*.js" --include="*.ts" >/dev/null 2>&1; then
+          echo "✅ Security headers configuration found"
+        else
+          echo "⚠️ Consider implementing security headers"
+        fi
+
+    - name: Check environment variable security
+      run: |
+        echo "Checking for potential secrets in code..."
+        
+        # Look for potential hardcoded secrets (basic check)
+        patterns=(
+          "password.*=.*['\"][^'\"]{8,}"
+          "secret.*=.*['\"][^'\"]{16,}"
+          "key.*=.*['\"][^'\"]{20,}"
+          "token.*=.*['\"][^'\"]{20,}"
+        )
+        
+        found_issues=false
+        for pattern in "${patterns[@]}"; do
+          if grep -r -i "$pattern" supernova/ >/dev/null 2>&1; then
+            echo "⚠️ Potential hardcoded secret found matching: $pattern"
+            found_issues=true
+          fi
+        done
+        
+        if [ "$found_issues" = false ]; then
+          echo "✅ No obvious hardcoded secrets found"
+        fi

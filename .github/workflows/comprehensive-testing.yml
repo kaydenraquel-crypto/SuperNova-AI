@@ -1,0 +1,747 @@
+name: Comprehensive Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly comprehensive tests
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '14'
+  COVERAGE_THRESHOLD: '85'
+  PERFORMANCE_THRESHOLD: '5000'  # 5 seconds max for full test suite
+  SECURITY_SCORE_THRESHOLD: '8.0'  # Bandit security score
+
+jobs:
+  # Code Quality and Static Analysis
+  code-quality:
+    name: Code Quality & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for better analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install bandit safety mypy black isort flake8 pylint
+
+    - name: Code formatting check (Black)
+      run: black --check --diff supernova/ test_suites/
+
+    - name: Import sorting check (isort)
+      run: isort --check-only --diff supernova/ test_suites/
+
+    - name: Linting (flake8)
+      run: flake8 supernova/ test_suites/ --max-line-length=100 --ignore=E203,W503
+
+    - name: Type checking (mypy)
+      run: mypy supernova/ --ignore-missing-imports
+
+    - name: Advanced linting (pylint)
+      run: pylint supernova/ --disable=C0301,R0903,R0913 --fail-under=7.0
+
+    - name: Security analysis (bandit)
+      run: bandit -r supernova/ -f json -o bandit-report.json
+      continue-on-error: true
+
+    - name: Dependency vulnerability check (safety)
+      run: safety check --json --output safety-report.json
+      continue-on-error: true
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-xdist pytest-mock
+
+    - name: Run unit tests
+      run: |
+        pytest test_suites/test_unit_api_comprehensive.py \
+               tests/ \
+               --cov=supernova \
+               --cov-report=xml \
+               --cov-report=html \
+               --cov-fail-under=85 \
+               --junit-xml=unit-test-results.xml \
+               -v \
+               -n auto
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unit-tests
+        name: codecov-umbrella
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: unit-test-results-${{ matrix.python-version }}
+        path: |
+          unit-test-results.xml
+          htmlcov/
+          coverage.xml
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: supernova_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      timescaledb:
+        image: timescale/timescaledb:latest-pg14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: timescale_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client redis-tools
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-timeout
+
+    - name: Set up test databases
+      run: |
+        export PGPASSWORD=postgres
+        psql -h localhost -U postgres -d supernova_test -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+        psql -h localhost -p 5433 -U postgres -d timescale_test -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
+    - name: Run integration tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/supernova_test
+        TIMESCALE_URL: postgresql://postgres:postgres@localhost:5433/timescale_test
+        REDIS_URL: redis://localhost:6379/0
+        TESTING: true
+      run: |
+        pytest test_suites/test_integration_comprehensive.py \
+               -v \
+               -m "integration" \
+               --timeout=300 \
+               --junit-xml=integration-test-results.xml
+
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: integration-test-results.xml
+
+  # Frontend Tests
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run type checking
+      run: npm run type-check
+
+    - name: Run unit tests
+      run: npm run test:coverage
+
+    - name: Run accessibility tests
+      run: |
+        npm install -g @axe-core/cli
+        npm run build
+        # Would run axe-core against built application
+
+    - name: Upload frontend coverage
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./frontend/coverage
+        flags: frontend-tests
+        name: codecov-frontend
+
+    - name: Upload frontend test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: frontend-test-results
+        path: |
+          frontend/coverage/
+          frontend/test-results.xml
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf-test]')
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install locust psutil
+
+    - name: Run performance tests
+      run: |
+        pytest test_suites/test_performance_comprehensive.py \
+               -v \
+               -m "performance" \
+               --junit-xml=performance-test-results.xml \
+               --timeout=600
+
+    - name: Run load tests
+      run: |
+        # Start application in background
+        python main.py &
+        APP_PID=$!
+        sleep 10  # Wait for app to start
+        
+        # Run load tests
+        locust --headless --users 50 --spawn-rate 5 --run-time 2m --host http://localhost:8000 \
+               --html performance-report.html \
+               --csv performance-results
+        
+        # Stop application
+        kill $APP_PID
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-test-results
+        path: |
+          performance-test-results.xml
+          performance-report.html
+          performance-results_*.csv
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run security tests
+      run: |
+        pytest test_suites/test_security_comprehensive.py \
+               -v \
+               -m "security" \
+               --junit-xml=security-test-results.xml
+
+    - name: OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.7.0
+      if: github.event_name == 'schedule'
+      with:
+        target: 'http://localhost:8000'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a'
+
+    - name: Upload security test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-test-results
+        path: |
+          security-test-results.xml
+          report_html.html
+          report_md.md
+          report_json.json
+
+  # Accessibility Tests
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js for frontend
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install selenium webdriver-manager
+        cd frontend && npm ci && cd ..
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+        cd ..
+
+    - name: Run accessibility tests
+      run: |
+        pytest test_suites/test_accessibility_ux.py \
+               -v \
+               -m "accessibility" \
+               --junit-xml=accessibility-test-results.xml
+
+    - name: Upload accessibility results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: accessibility-test-results
+        path: |
+          accessibility-test-results.xml
+          accessibility_ux_report.json
+
+  # Data Integrity Tests
+  data-integrity-tests:
+    name: Data Integrity Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: integrity_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run data integrity tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/integrity_test
+        TESTING: true
+      run: |
+        pytest test_suites/test_data_integrity_comprehensive.py \
+               -v \
+               -m "data_integrity" \
+               --junit-xml=data-integrity-test-results.xml
+
+    - name: Upload data integrity results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: data-integrity-test-results
+        path: |
+          data-integrity-test-results.xml
+          data_integrity_report.json
+
+  # Error Recovery Tests
+  error-recovery-tests:
+    name: Error Recovery Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run error recovery tests
+      run: |
+        pytest test_suites/test_error_recovery_comprehensive.py \
+               -v \
+               -m "error_recovery" \
+               --junit-xml=error-recovery-test-results.xml
+
+    - name: Upload error recovery results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: error-recovery-test-results
+        path: |
+          error-recovery-test-results.xml
+          error_recovery_report.json
+
+  # End-to-End Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: e2e_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install playwright
+        playwright install
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+        cd ..
+
+    - name: Start application
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_test
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        python main.py &
+        echo $! > app.pid
+        sleep 10  # Wait for application to start
+
+    - name: Run E2E tests
+      run: |
+        pytest test_suites/test_e2e_comprehensive.py \
+               -v \
+               -m "e2e" \
+               --junit-xml=e2e-test-results.xml \
+               --timeout=600
+
+    - name: Stop application
+      run: |
+        if [ -f app.pid ]; then
+          kill $(cat app.pid)
+        fi
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          e2e-test-results.xml
+          screenshots/
+          videos/
+
+  # Test Report Aggregation
+  test-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs: [
+      code-quality,
+      unit-tests,
+      integration-tests,
+      frontend-tests,
+      performance-tests,
+      security-tests,
+      accessibility-tests,
+      data-integrity-tests,
+      error-recovery-tests
+    ]
+    if: always()
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all test artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: test-artifacts/
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install report generation dependencies
+      run: |
+        pip install junitparser jinja2 markdown
+
+    - name: Generate comprehensive test report
+      run: |
+        python test_suites/generate_comprehensive_report.py \
+               --artifacts-dir test-artifacts/ \
+               --output-dir test-reports/ \
+               --format html,json,markdown
+
+    - name: Upload comprehensive test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: comprehensive-test-report
+        path: test-reports/
+
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const reportPath = 'test-reports/summary.md';
+          
+          if (fs.existsSync(reportPath)) {
+            const report = fs.readFileSync(reportPath, 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## 🧪 Test Results\n\n' + report
+            });
+          }
+
+  # Production Readiness Check
+  production-readiness:
+    name: Production Readiness Check
+    runs-on: ubuntu-latest
+    needs: [
+      unit-tests,
+      integration-tests,
+      security-tests,
+      data-integrity-tests,
+      error-recovery-tests
+    ]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download test artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: test-artifacts/
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Evaluate production readiness
+      run: |
+        python test_suites/evaluate_production_readiness.py \
+               --test-results test-artifacts/ \
+               --output production-readiness-report.json
+
+    - name: Check readiness criteria
+      run: |
+        python -c "
+        import json
+        with open('production-readiness-report.json', 'r') as f:
+            report = json.load(f)
+        
+        readiness_score = report.get('overall_score', 0)
+        critical_issues = report.get('critical_issues', [])
+        
+        print(f'Production Readiness Score: {readiness_score}/100')
+        
+        if readiness_score < 80:
+            print('❌ Not ready for production')
+            exit(1)
+        elif critical_issues:
+            print('⚠️ Ready with warnings')
+            exit(1)
+        else:
+            print('✅ Ready for production')
+            exit(0)
+        "
+
+    - name: Upload production readiness report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: production-readiness-report
+        path: production-readiness-report.json
+
+  # Deployment
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [production-readiness]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Deployment logic would go here
+        
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests on staging..."
+        # Smoke tests would go here

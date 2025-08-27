@@ -1,0 +1,68 @@
+{
+  "timestamp": "2025-08-26T12:20:51.350451",
+  "tests": {
+    "Code Structure": {
+      "passed": true,
+      "message": "All required files found",
+      "files_checked": [
+        "supernova/optimizer.py",
+        "supernova/optimization_models.py",
+        "supernova/api.py",
+        "supernova/workflows.py",
+        "supernova/schemas.py",
+        "requirements.txt"
+      ]
+    },
+    "Dependencies": {
+      "passed": false,
+      "error": "Missing dependencies: optuna, sqlalchemy, fastapi, pydantic, prefect",
+      "missing": [
+        "optuna",
+        "sqlalchemy",
+        "fastapi",
+        "pydantic",
+        "prefect"
+      ],
+      "available": []
+    },
+    "Optimizer Import": {
+      "passed": false,
+      "error": "Failed to import optimizer: No module named 'numpy'"
+    },
+    "Models Import": {
+      "passed": false,
+      "error": "Failed to import models: No module named 'sqlalchemy'"
+    },
+    "API Import": {
+      "passed": false,
+      "error": "Failed to import API: No module named 'fastapi'"
+    },
+    "Workflows Import": {
+      "passed": false,
+      "error": "OPTIMIZATION_AVAILABLE is False in workflows"
+    },
+    "Parameter Spaces": {
+      "passed": false,
+      "error": "Failed to test parameter spaces: No module named 'numpy'"
+    },
+    "Basic Functionality": {
+      "passed": false,
+      "error": "Basic functionality test failed: No module named 'numpy'"
+    }
+  },
+  "summary": {
+    "passed": 1,
+    "failed": 7,
+    "total": 8
+  },
+  "issues": [
+    "Dependencies: Missing dependencies: optuna, sqlalchemy, fastapi, pydantic, prefect",
+    "Optimizer Import: Failed to import optimizer: No module named 'numpy'",
+    "Models Import: Failed to import models: No module named 'sqlalchemy'",
+    "API Import: Failed to import API: No module named 'fastapi'",
+    "Workflows Import: OPTIMIZATION_AVAILABLE is False in workflows",
+    "Parameter Spaces: Failed to test parameter spaces: No module named 'numpy'",
+    "Basic Functionality: Basic functionality test failed: No module named 'numpy'"
+  ],
+  "success": false
+}

@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-08-26T12:52:54.538347",
+  "tests": {
+    "file_structure": {
+      "status": "SUCCESS",
+      "file_status": {
+        "supernova/agent_tools.py": "ERROR: 'charmap' codec can't decode byte 0x8f in position 36589: character maps to <undefined>",
+        "supernova/chat.py": "ERROR: 'charmap' codec can't decode byte 0x8f in position 31643: character maps to <undefined>",
+        "supernova/conversation_memory.py": "VALID",
+        "supernova/websocket_handler.py": "VALID",
+        "supernova/chat_ui.py": "ERROR: 'charmap' codec can't decode byte 0x81 in position 61835: character maps to <undefined>",
+        "supernova/api.py": "VALID",
+        "supernova/db.py": "VALID",
+        "supernova/config.py": "VALID"
+      },
+      "missing_files": [],
+      "total_files": 8,
+      "valid_files": 5
+    },
+    "imports": {
+      "status": "PARTIAL",
+      "import_results": {
+        "agent_tools": "FAILED: No module named 'httpx'",
+        "chat": "FAILED: No module named 'pydantic'",
+        "conversation_memory": "FAILED: No module named 'pydantic'",
+        "websocket_handler": "FAILED: No module named 'fastapi'",
+        "chat_ui": "FAILED: No module named 'fastapi'"
+      },
+      "success_count": 0,
+      "total_count": 5,
+      "success_rate": 0.0
+    },
+    "memory_system": {
+      "status": "FAILED",
+      "error": "No module named 'pydantic'"
+    },
+    "conversation_agent": {
+      "status": "FAILED",
+      "error": "No module named 'pydantic'"
+    },
+    "api_structure": {
+      "status": "SUCCESS",
+      "has_chat_endpoints": true,
+      "has_websocket_route": true,
+      "has_fastapi_import": true,
+      "has_error_handling": true,
+      "file_size": 92534
+    },
+    "websocket_structure": {
+      "status": "PARTIAL",
+      "has_websocket_manager": false,
+      "has_connection_handling": true,
+      "has_message_handling": false,
+      "has_real_time_features": true,
+      "file_size": 26592
+    },
+    "chat_ui_structure": {
+      "status": "FAILED",
+      "error": "'charmap' codec can't decode byte 0x81 in position 61835: character maps to <undefined>"
+    }
+  },
+  "summary": {
+    "overall_status": "NEEDS_ATTENTION",
+    "total_tests": 7,
+    "success_count": 2,
+    "partial_count": 2,
+    "failed_count": 3,
+    "success_rate": 28.57142857142857,
+    "recommendations": [
+      "Multiple critical issues detected - significant work needed",
+      "Do not deploy until core issues are resolved",
+      "Some import issues detected - check dependencies",
+      "CRITICAL: Memory system not functional - fix before deployment",
+      "CRITICAL: Conversation agent not functional - core system issue",
+      "Next steps:",
+      "  1. Install and configure LLM provider (OpenAI, Anthropic, etc.)",
+      "  2. Test real-time WebSocket functionality",
+      "  3. Validate chat UI in browser",
+      "  4. Run end-to-end integration tests",
+      "  5. Conduct performance and load testing"
+    ]
+  }
+}

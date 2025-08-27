@@ -1,0 +1,257 @@
+{
+  "file_structure": {
+    "requirements.txt": {
+      "exists": true,
+      "size": 883
+    },
+    "main.py": {
+      "exists": true,
+      "size": 300
+    },
+    "supernova/__init__.py": {
+      "exists": true,
+      "size": 22
+    },
+    "supernova/config.py": {
+      "exists": true,
+      "size": 8877
+    },
+    "supernova/advisor.py": {
+      "exists": true,
+      "size": 16629
+    },
+    "supernova/backtester.py": {
+      "exists": true,
+      "size": 75080
+    },
+    "supernova/workflows.py": {
+      "exists": true,
+      "size": 23080
+    },
+    "supernova/api.py": {
+      "exists": true,
+      "size": 14777
+    },
+    "comprehensive_integration_test.py": {
+      "exists": true,
+      "size": 40787
+    },
+    "simulated_integration_test.py": {
+      "exists": true,
+      "size": 33850
+    },
+    "INTEGRATION_TEST_REPORT.md": {
+      "exists": true,
+      "size": 13394
+    }
+  },
+  "requirements": {
+    "status": "success",
+    "total": 41,
+    "categories": {
+      "core": [
+        "fastapi==0.111.0",
+        "uvicorn==0.30.1",
+        "pydantic==2.8.2",
+        "SQLAlchemy==2.0.32",
+        "python-dotenv==1.0.1",
+        "pandas==2.2.2",
+        "numpy==1.26.4",
+        "httpx==0.27.0",
+        "scikit-learn==1.5.1",
+        "nltk==3.8.1",
+        "torch==2.1.0",
+        "beautifulsoup4==4.12.2",
+        "newspaper3k==0.2.8",
+        "aiohttp==3.9.1",
+        "asyncio-throttle==1.0.2",
+        "lxml==4.9.3",
+        "websockets==12.0",
+        "aiohttp==3.9.5",
+        "redis==5.0.1",
+        "tenacity==8.2.3",
+        "ta-lib"
+      ],
+      "llm": [
+        "langchain>=0.1.0",
+        "langchain-openai>=0.1.0",
+        "langchain-anthropic>=0.1.0",
+        "langchain-community>=0.1.0",
+        "langchain-core>=0.1.0",
+        "langchain-ollama>=0.1.0",
+        "langchain-huggingface>=0.1.0",
+        "tiktoken>=0.5.0",
+        "openai>=1.0.0",
+        "anthropic>=0.21.0"
+      ],
+      "vectorbt": [
+        "vectorbt>=0.25.0",
+        "numba>=0.56.0"
+      ],
+      "prefect": [
+        "prefect>=2.14.0",
+        "prefect-sqlalchemy>=0.2.0"
+      ],
+      "sentiment": [
+        "tweepy==4.14.0",
+        "praw==7.7.1",
+        "spacy==3.7.2",
+        "textblob==0.17.1",
+        "vaderSentiment==3.3.2",
+        "transformers==4.35.0"
+      ]
+    }
+  },
+  "modules": {
+    "advisor": {
+      "status": "success",
+      "lines": 408,
+      "imports": 31,
+      "classes": 0,
+      "functions": 11,
+      "import_list": [
+        "from __future__ import annotations",
+        "from typing import Tuple",
+        "from typing import Optional",
+        "from typing import Dict",
+        "from typing import Any",
+        "import asyncio",
+        "import time",
+        "import hashlib",
+        "import json",
+        "import logging"
+      ],
+      "class_list": [],
+      "function_list": [
+        "score_risk",
+        "_get_risk_profile_name",
+        "_estimate_token_cost",
+        "_update_cost_tracker",
+        "_get_cache_key",
+        "_get_cached_response",
+        "_cache_response",
+        "_get_llm_model",
+        "_generate_simple_rationale",
+        "_prepare_llm_context"
+      ]
+    },
+    "backtester": {
+      "status": "success",
+      "lines": 1703,
+      "imports": 21,
+      "classes": 2,
+      "functions": 27,
+      "import_list": [
+        "import pandas",
+        "import numpy",
+        "from typing import Dict",
+        "from typing import List",
+        "from typing import Tuple",
+        "from typing import Optional",
+        "from typing import Any",
+        "from dataclasses import dataclass",
+        "from datetime import datetime",
+        "from datetime import time"
+      ],
+      "class_list": [
+        "TradeRecord",
+        "AssetConfig"
+      ],
+      "function_list": [
+        "run_backtest",
+        "_max_drawdown",
+        "_win_rate",
+        "_calculate_sortino_ratio",
+        "_calculate_var",
+        "_calculate_win_rate",
+        "_calculate_profit_factor",
+        "_calculate_recovery_factor",
+        "_calculate_information_ratio",
+        "_calculate_calmar_ratio"
+      ]
+    },
+    "workflows": {
+      "status": "success",
+      "lines": 664,
+      "imports": 28,
+      "classes": 2,
+      "functions": 12,
+      "import_list": [
+        "from __future__ import annotations",
+        "import asyncio",
+        "import logging",
+        "from datetime import datetime",
+        "from datetime import timedelta",
+        "from typing import List",
+        "from typing import Dict",
+        "from typing import Optional",
+        "from typing import Any",
+        "from collections import defaultdict"
+      ],
+      "class_list": [
+        "ConcurrentTaskRunner",
+        "MockSettings"
+      ],
+      "function_list": [
+        "analyze_sentiment_batch_task",
+        "aggregate_sentiment_signals_task",
+        "_create_neutral_signal",
+        "create_sentiment_signal_from_dict",
+        "is_prefect_available",
+        "create_scheduled_sentiment_flow",
+        "task",
+        "flow",
+        "get_run_logger",
+        "decorator"
+      ]
+    },
+    "api": {
+      "status": "success",
+      "lines": 370,
+      "imports": 39,
+      "classes": 0,
+      "functions": 6,
+      "import_list": [
+        "import json",
+        "from contextlib import asynccontextmanager",
+        "from typing import List",
+        "from typing import Dict",
+        "from typing import Any",
+        "from fastapi import FastAPI",
+        "from fastapi import HTTPException",
+        "from fastapi import BackgroundTasks",
+        "from db import init_db",
+        "from db import SessionLocal"
+      ],
+      "class_list": [],
+      "function_list": [
+        "intake",
+        "get_advice",
+        "_get_risk",
+        "add_watchlist",
+        "backtest",
+        "vectorbt_backtest"
+      ]
+    },
+    "config": {
+      "status": "success",
+      "lines": 160,
+      "imports": 2,
+      "classes": 1,
+      "functions": 0,
+      "import_list": [
+        "from dotenv import load_dotenv",
+        "import os"
+      ],
+      "class_list": [
+        "Settings"
+      ],
+      "function_list": []
+    }
+  },
+  "enhancements": {
+    "llm_integration": true,
+    "vectorbt_integration": true,
+    "prefect_integration": true
+  }
+}

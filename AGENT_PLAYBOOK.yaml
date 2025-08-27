@@ -1,0 +1,92 @@
+# SuperNova Agent Playbook
+meta:
+  project: "SuperNova (AI Financial Advisor)"
+  version: "0.2.0"
+  constraint_max_active_agents: 5
+  journal_file: "SuperJournal.txt"
+
+agents:
+  - id: supervisor
+    name: SupervisorAgent
+    role: Oversees phases, assigns tasks, approves outputs
+    skills: [planning, triage, coordination]
+    scope: ["*"]
+    auto_approve: true
+
+  - id: intake
+    name: IntakeAgent
+    role: Client intake & risk profiling
+    skills: [pydantic, schema-design, scoring]
+    scope: ["supernova/schemas.py", "supernova/advisor.py"]
+
+  - id: indicators
+    name: IndicatorsAgent
+    role: Maintain/extend technical indicators
+    skills: [pandas, numpy, statistics]
+    scope: ["supernova/indicators.py"]
+
+  - id: strategy
+    name: StrategyAgent
+    role: Build/refine multi-asset strategies
+    skills: [trading_logic, ensemble_design]
+    scope: ["supernova/strategy_engine.py"]
+
+  - id: backtest
+    name: BacktestAgent
+    role: Extend simulator and metrics
+    skills: [simulation, vectorization, risk_metrics]
+    scope: ["supernova/backtester.py", "supernova/recursive.py"]
+
+  - id: sentiment
+    name: SentimentAgent
+    role: Social/news sentiment integration
+    skills: [nlp, api_integration, text_classification]
+    scope: ["supernova/sentiment.py"]
+
+  - id: alert
+    name: AlertAgent
+    role: Watchlists, signals, and webhooks
+    skills: [asyncio, webhooks, evaluation]
+    scope: ["supernova/alerting.py"]
+
+  - id: riskcompliance
+    name: RiskComplianceAgent
+    role: Suitability, compliance, recordkeeping
+    skills: [finance_rules, policy_design]
+    scope: ["supernova/compliance.md", "supernova/api.py", "supernova/advisor.py"]
+
+  - id: db
+    name: DBAgent
+    role: DB models & migrations
+    skills: [sqlalchemy, schema_design]
+    scope: ["supernova/db.py"]
+
+  - id: api
+    name: APIAgent
+    role: FastAPI routes/middleware/contracts
+    skills: [fastapi, async, http]
+    scope: ["supernova/api.py"]
+
+  - id: journal
+    name: JournalAgent
+    role: Structured journaling
+    skills: [logging, io, formatting]
+    scope: ["supernova/journal.py", "SuperJournal.txt"]
+
+  - id: integration
+    name: IntegrationAgent
+    role: NovaSignal adapters & data flow
+    skills: [adapters, websockets, rest]
+    scope: ["connectors/novasignal.py"]
+
+  - id: test
+    name: TestAgent
+    role: Unit/integration tests
+    skills: [pytest, fixtures]
+    scope: ["tests/"]
+
+  - id: docs
+    name: DocAgent
+    role: Briefs, roadmap, docstrings
+    skills: [markdown, tech_writing]
+    scope: ["MASTER_BRIEF.md", "ROADMAP.md", "SuperJournal_TEMPLATE.md"]

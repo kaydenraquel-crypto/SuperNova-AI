@@ -1,0 +1,519 @@
+version: '3.8'
+
+# SuperNova AI - Enhanced Production Docker Compose Configuration
+# This configuration provides enterprise-grade production deployment with:
+# - High availability and scalability
+# - Security hardening and secret management  
+# - Comprehensive monitoring and logging
+# - Backup and disaster recovery capabilities
+# - Performance optimization and resource management
+
+services:
+  # Main SuperNova AI Application
+  supernova-api:
+    build:
+      context: ../../
+      dockerfile: Dockerfile.production
+      args:
+        BUILD_ENV: production
+        PYTHON_VERSION: 3.11
+        BUILD_DATE: ${BUILD_DATE}
+        VCS_REF: ${VCS_REF}
+        VERSION: ${VERSION}
+    image: ${DOCKER_REGISTRY}/supernova-ai:${VERSION}
+    container_name: supernova_api_prod
+    hostname: supernova-api
+    restart: unless-stopped
+    
+    environment:
+      - SUPERNOVA_ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - CONTAINER_MODE=true
+      - DOCKER_DEPLOYMENT=true
+    
+    env_file:
+      - ../../.env.production
+      - ../../.env.production.secrets
+    
+    ports:
+      - "8000:8000"  # API
+      - "8001:8001"  # WebSocket
+      - "9090:9090"  # Metrics
+    
+    volumes:
+      - supernova-data:/app/data
+      - supernova-logs:/var/log/supernova
+      - supernova-config:/app/config:ro
+      - supernova-secrets:/app/secrets:ro
+      - /etc/ssl/certs:/etc/ssl/certs:ro
+    
+    networks:
+      - supernova-network
+      - monitoring-network
+    
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 60s
+        max_failure_ratio: 0.3
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: pause
+        monitor: 60s
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        labels: "service=supernova,environment=production"
+
+  # NGINX Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - prod_logs:/var/log/nginx
+    networks:
+      - supernova-prod
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - supernova
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Redis Cluster
+  redis-master:
+    image: redis:7-alpine
+    container_name: redis_master_prod
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - supernova-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: redis_replica_prod
+    command: redis-server --requirepass ${REDIS_PASSWORD} --replicaof redis-master 6379 --masterauth ${REDIS_PASSWORD}
+    volumes:
+      - redis_replica_data:/data
+    networks:
+      - supernova-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    depends_on:
+      - redis-master
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Prometheus (Production Monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_prod
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+    volumes:
+      - ./prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+      - supernova-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Grafana (Production Dashboard)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_prod
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # AlertManager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager_prod
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://alertmanager:9093'
+    volumes:
+      - ./alertmanager/alertmanager.prod.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Node Exporter (System Metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter_prod
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "2"
+
+  # cAdvisor (Container Metrics)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor_prod
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8082:8080"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "2"
+
+  # Log Aggregation (ELK Stack alternative)
+  fluentd:
+    image: fluent/fluentd:latest
+    container_name: fluentd_prod
+    volumes:
+      - ./fluentd/fluent.prod.conf:/fluentd/etc/fluent.conf:ro
+      - prod_logs:/var/log/supernova:ro
+    ports:
+      - "24224:24224"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Backup Service
+  backup:
+    image: ${DOCKER_REGISTRY}/supernova-backup:${VERSION}
+    container_name: backup_prod
+    environment:
+      - BACKUP_SCHEDULE=0 2 * * *  # Daily at 2 AM
+      - S3_BUCKET=${BACKUP_S3_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+    volumes:
+      - prod_data:/data/app:ro
+      - prod_config:/data/config:ro
+    networks:
+      - supernova-prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  # Application volumes
+  prod_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/supernova/app
+  
+  prod_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/log/supernova
+  
+  prod_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/supernova/config
+
+  # Cache volumes
+  redis_master_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/redis/master
+  
+  redis_replica_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/redis/replica
+
+  # Monitoring volumes
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/prometheus
+  
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/grafana
+  
+  alertmanager_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/alertmanager
+
+networks:
+  supernova-prod:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: supernova-prod
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+  
+  monitoring:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: monitoring
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+# Production deployment configurations
+configs:
+  nginx_config:
+    file: ./nginx/nginx.prod.conf
+  
+  prometheus_config:
+    file: ./prometheus/prometheus.prod.yml
+  
+  alertmanager_config:
+    file: ./alertmanager/alertmanager.prod.yml
+
+secrets:
+  redis_password:
+    external: true
+  
+  grafana_admin_password:
+    external: true
+  
+  ssl_certificate:
+    external: true
+  
+  ssl_private_key:
+    external: true

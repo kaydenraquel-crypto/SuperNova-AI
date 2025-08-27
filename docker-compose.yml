@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # SuperNova Application
+  supernova-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supernova-app
+    ports:
+      - "8081:8081"
+      - "80:80"
+    environment:
+      - DATABASE_URL=sqlite:///./data/supernova.db
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-change-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - TIMESCALE_HOST=timescaledb
+      - TIMESCALE_PORT=5432
+      - TIMESCALE_DB=supernova_ts
+      - TIMESCALE_USER=supernova
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-supernova123}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+    volumes:
+      - supernova-data:/app/data
+      - supernova-logs:/app/logs
+      - supernova-uploads:/app/uploads
+    depends_on:
+      - redis
+      - timescaledb
+    networks:
+      - supernova-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: supernova-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - supernova-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # TimescaleDB for time-series sentiment data
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: supernova-timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=supernova_ts
+      - POSTGRES_USER=supernova
+      - POSTGRES_PASSWORD=${TIMESCALE_PASSWORD:-supernova123}
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+      - ./docker/timescale-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - supernova-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supernova -d supernova_ts"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # Nginx Load Balancer (for multiple app instances)
+  nginx:
+    image: nginx:alpine
+    container_name: supernova-nginx
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./docker/nginx-lb.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - supernova-app
+    networks:
+      - supernova-network
+    restart: unless-stopped
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: supernova-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - supernova-network
+    restart: unless-stopped
+
+  # Grafana for monitoring dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: supernova-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - supernova-network
+    restart: unless-stopped
+
+volumes:
+  supernova-data:
+    driver: local
+  supernova-logs:
+    driver: local
+  supernova-uploads:
+    driver: local
+  redis-data:
+    driver: local
+  timescale-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  supernova-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,58 @@
+{
+  "configuration": {
+    "status": "error",
+    "error": "No module named 'dotenv'"
+  },
+  "imports": {
+    "import_results": {
+      "supernova.advisor": {
+        "status": "import_error",
+        "error": "No module named 'pandas'"
+      },
+      "supernova.backtester": {
+        "status": "import_error",
+        "error": "No module named 'pandas'"
+      },
+      "supernova.workflows": {
+        "status": "success"
+      },
+      "supernova.api": {
+        "status": "import_error",
+        "error": "No module named 'fastapi'"
+      }
+    },
+    "availability_flags": {
+      "VBT_AVAILABLE": false,
+      "PREFECT_AVAILABLE": false,
+      "LANGCHAIN_AVAILABLE": false
+    },
+    "successful_imports": 1
+  },
+  "sample_data": {
+    "status": "success",
+    "data_points": 100,
+    "sample_record": {
+      "timestamp": "2023-01-01T00:00:00",
+      "open": 98.61,
+      "high": 98.66,
+      "low": 98.38,
+      "close": 98.46,
+      "volume": 488280
+    },
+    "date_range": "2023-01-01T00:00:00 to 2023-04-10T00:00:00"
+  },
+  "basic_functionality": {
+    "risk_scoring": {
+      "status": "error",
+      "error": "No module named 'pandas'"
+    },
+    "config_validation": {
+      "status": "error",
+      "error": "No module named 'dotenv'"
+    }
+  },
+  "api_structure": {
+    "status": "error",
+    "error": "No module named 'fastapi'"
+  }
+}

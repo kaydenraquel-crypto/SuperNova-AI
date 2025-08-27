@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(copy:*)",
+      "Bash(pip install:*)",
+      "Bash(/c/Users/cocom/AppData/Local/Programs/Python/Python311/python.exe -m pip list)",
+      "Bash(/c/Users/cocom/AppData/Local/Programs/Python/Python311/python.exe -m uvicorn supernova.api:app --reload --host 0.0.0.0 --port 8081)",
+      "Bash(curl:*)",
+      "Bash(C:UserscocomAppDataLocalProgramsPythonPython311python.exe --version)",
+      "Bash(C:UserscocomAppDataLocalProgramsPythonPython313python.exe -m pip install pandas numpy scipy)",
+      "Bash(/c/Users/cocom/AppData/Local/Programs/Python/Python313/python.exe -m pip install pandas numpy scipy)",
+      "Bash(grep:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(.venv/Scripts/activate)",
+      "Bash(.venv/Scripts/python:*)",
+      "Bash(pip --version)",
+      "Bash(C:UserscocomAppDataLocalProgramsPythonPython311python.exe -c \"\nfrom supernova.api import app\nfrom supernova.config import settings\nfrom supernova import db\nimport sys\n\ntry:\n    # Test database initialization\n    print(''Testing database initialization...'')\n    db.init_db()\n    print(''Database initialization successful'')\n    \n    # Test API app creation\n    print(''Testing API app creation...'')\n    print(f''FastAPI app created: {app.title} v{app.version}'')\n    \n    # Test configuration loading\n    print(''Testing configuration loading...'')\n    print(''Configuration loaded successfully'')\n    \n    print(''\\nCore system validation successful!'')\n    \nexcept Exception as e:\n    print(f''Error: {str(e)}'')\n    sys.exit(1)\n\")",
+      "Bash(alembic init:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(chmod:*)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

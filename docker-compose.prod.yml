@@ -1,0 +1,352 @@
+version: '3.8'
+
+# Production Docker Compose with high availability and scaling
+services:
+  # SuperNova Application (scaled)
+  supernova-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: supernova-ai:latest
+    ports:
+      - "8081-8084:8081"  # Scale to 4 instances
+    environment:
+      - DATABASE_URL=sqlite:///./data/supernova.db
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=redis://redis-cluster:6379/0
+      - TIMESCALE_HOST=timescaledb-primary
+      - TIMESCALE_PORT=5432
+      - TIMESCALE_DB=supernova_ts
+      - TIMESCALE_USER=supernova
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - supernova-data:/app/data
+      - supernova-logs:/app/logs:rw
+      - supernova-uploads:/app/uploads:rw
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+    depends_on:
+      - redis-cluster
+      - timescaledb-primary
+    networks:
+      - supernova-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Redis Cluster for high availability
+  redis-cluster:
+    image: redis/redis-stack:latest
+    container_name: supernova-redis-cluster
+    ports:
+      - "6379:6379"
+      - "8001:8001"  # RedisInsight
+    environment:
+      - REDIS_ARGS=--cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - redis-cluster-data:/data
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # TimescaleDB Primary (with replication)
+  timescaledb-primary:
+    image: timescale/timescaledb-ha:pg14-latest
+    container_name: supernova-timescaledb-primary
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=supernova_ts
+      - POSTGRES_USER=supernova
+      - POSTGRES_PASSWORD=${TIMESCALE_PASSWORD}
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${TIMESCALE_REPL_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - TIMESCALEDB_TELEMETRY=off
+    volumes:
+      - timescale-primary-data:/var/lib/postgresql/data
+      - ./docker/timescale-init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/timescale-backup:/backup
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supernova -d supernova_ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # TimescaleDB Read Replica
+  timescaledb-replica:
+    image: timescale/timescaledb-ha:pg14-latest
+    container_name: supernova-timescaledb-replica
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_MASTER_SERVICE=timescaledb-primary
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${TIMESCALE_REPL_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - TIMESCALEDB_TELEMETRY=off
+    volumes:
+      - timescale-replica-data:/var/lib/postgresql/data
+    depends_on:
+      - timescaledb-primary
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    restart: unless-stopped
+
+  # HAProxy Load Balancer
+  haproxy:
+    image: haproxy:latest
+    container_name: supernova-haproxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8404:8404"  # Stats page
+    volumes:
+      - ./docker/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./docker/ssl:/etc/ssl/certs:ro
+    depends_on:
+      - supernova-app
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8404/stats"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: supernova-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    restart: unless-stopped
+
+  # Grafana with pre-configured dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: supernova-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://monitoring.supernova.ai
+      - GF_SECURITY_SECRET_KEY=${GRAFANA_SECRET_KEY}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    restart: unless-stopped
+
+  # ELK Stack for logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: supernova-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.8.0
+    container_name: supernova-logstash
+    volumes:
+      - ./docker/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - supernova-logs:/app/logs:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    container_name: supernova-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - supernova-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    restart: unless-stopped
+
+  # Backup service
+  backup:
+    image: alpine:latest
+    container_name: supernova-backup
+    volumes:
+      - supernova-data:/backup/data:ro
+      - timescale-primary-data:/backup/timescale:ro
+      - ./docker/backup-script.sh:/backup.sh:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${BACKUP_S3_BUCKET}
+    networks:
+      - supernova-network
+    command: sh -c "while true; do sleep 86400; /backup.sh; done"
+    restart: unless-stopped
+
+volumes:
+  supernova-data:
+    driver: local
+  supernova-logs:
+    driver: local
+  supernova-uploads:
+    driver: local
+  redis-cluster-data:
+    driver: local
+  timescale-primary-data:
+    driver: local
+  timescale-replica-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  supernova-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

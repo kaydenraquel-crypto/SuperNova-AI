@@ -1,0 +1,372 @@
+name: Continuous Deployment Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Comprehensive Testing Pipeline"]
+    types: [completed]
+    branches: [main]
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  # Pre-deployment Security Scan
+  security-pre-deployment:
+    name: Pre-Deployment Security Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Docker security scan
+      run: |
+        docker build -t security-scan .
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy image security-scan
+
+  # Build and Push Container Images
+  build-images:
+    name: Build Container Images
+    runs-on: ubuntu-latest
+    needs: security-pre-deployment
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+    
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+  # Deploy to Staging Environment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-images
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure Kubernetes context
+      uses: azure/k8s-set-context@v3
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG }}
+    
+    - name: Deploy to staging
+      run: |
+        # Update deployment image
+        kubectl set image deployment/supernova-staging \
+          supernova=${{ needs.build-images.outputs.image-tag }} \
+          -n staging
+        
+        # Wait for rollout
+        kubectl rollout status deployment/supernova-staging -n staging --timeout=300s
+    
+    - name: Run staging smoke tests
+      run: |
+        # Wait for staging deployment
+        sleep 30
+        
+        # Run smoke tests
+        python -m pytest tests/smoke_tests/ \
+          --base-url=${{ secrets.STAGING_URL }} \
+          --api-key=${{ secrets.STAGING_API_KEY }} \
+          --timeout=60 \
+          -v
+    
+    - name: Run staging integration tests
+      run: |
+        python -m pytest test_suites/test_integration_comprehensive.py \
+          --base-url=${{ secrets.STAGING_URL }} \
+          --environment=staging \
+          --timeout=300 \
+          -v
+
+  # Security Testing in Staging
+  staging-security-tests:
+    name: Staging Security Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: OWASP ZAP Full Scan
+      uses: zaproxy/action-full-scan@v0.7.0
+      with:
+        target: ${{ secrets.STAGING_URL }}
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a -j'
+    
+    - name: Upload ZAP results
+      uses: actions/upload-artifact@v3
+      with:
+        name: zap-staging-results
+        path: report_html.html
+
+  # Performance Testing in Staging
+  staging-performance-tests:
+    name: Staging Performance Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install load testing tools
+      run: |
+        pip install locust
+    
+    - name: Run load tests
+      run: |
+        locust --headless \
+          --users 100 \
+          --spawn-rate 10 \
+          --run-time 300s \
+          --host ${{ secrets.STAGING_URL }} \
+          --html performance-staging-report.html \
+          --csv performance-staging-results \
+          -f load_testing_suite.py
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-staging-results
+        path: |
+          performance-staging-report.html
+          performance-staging-results_*.csv
+
+  # Database Migration Testing
+  staging-migration-tests:
+    name: Staging Migration Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Test database migrations
+      run: |
+        # Run migration tests
+        python -m pytest test_suites/test_migrations.py \
+          --database-url=${{ secrets.STAGING_DATABASE_URL }} \
+          -v
+    
+    - name: Test rollback procedures
+      run: |
+        python -m pytest test_suites/test_rollback.py \
+          --database-url=${{ secrets.STAGING_DATABASE_URL }} \
+          -v
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [staging-security-tests, staging-performance-tests, staging-migration-tests]
+    environment: production
+    if: github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure Kubernetes context
+      uses: azure/k8s-set-context@v3
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.PROD_KUBE_CONFIG }}
+    
+    - name: Blue-Green Deployment
+      run: |
+        # Deploy to green environment
+        kubectl set image deployment/supernova-green \
+          supernova=${{ needs.build-images.outputs.image-tag }} \
+          -n production
+        
+        # Wait for rollout
+        kubectl rollout status deployment/supernova-green -n production --timeout=300s
+        
+        # Run production smoke tests
+        sleep 30
+        python -m pytest tests/smoke_tests/ \
+          --base-url=${{ secrets.PROD_GREEN_URL }} \
+          --timeout=60 \
+          -v
+        
+        # Switch traffic to green
+        kubectl patch service supernova-service \
+          -n production \
+          -p '{"spec":{"selector":{"version":"green"}}}'
+        
+        # Update blue deployment for next deployment
+        kubectl set image deployment/supernova-blue \
+          supernova=${{ needs.build-images.outputs.image-tag }} \
+          -n production
+
+  # Post-Production Health Checks
+  production-health-checks:
+    name: Production Health Checks
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Health check monitoring
+      run: |
+        # Monitor application health for 10 minutes
+        for i in {1..20}; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PROD_URL }}/health)
+          if [ $response -ne 200 ]; then
+            echo "Health check failed with status code: $response"
+            exit 1
+          fi
+          sleep 30
+        done
+        echo "All health checks passed"
+    
+    - name: Performance monitoring
+      run: |
+        # Monitor key performance metrics
+        python -c "
+        import requests
+        import time
+        
+        url = '${{ secrets.PROD_URL }}/api/performance-metrics'
+        
+        for i in range(10):
+            start = time.time()
+            response = requests.get(url)
+            elapsed = time.time() - start
+            
+            if elapsed > 2.0:  # 2 second threshold
+                print(f'Performance degradation detected: {elapsed}s')
+                exit(1)
+            
+            time.sleep(30)
+        
+        print('Performance monitoring passed')
+        "
+
+  # Rollback on Failure
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production, production-health-checks]
+    environment: production
+    if: failure()
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure Kubernetes context
+      uses: azure/k8s-set-context@v3
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.PROD_KUBE_CONFIG }}
+    
+    - name: Rollback deployment
+      run: |
+        # Switch traffic back to blue (previous version)
+        kubectl patch service supernova-service \
+          -n production \
+          -p '{"spec":{"selector":{"version":"blue"}}}'
+        
+        echo "Rollback completed successfully"
+    
+    - name: Send rollback notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "🚨 Production deployment failed and was rolled back"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Deployment Notifications
+  notify-success:
+    name: Success Notification
+    runs-on: ubuntu-latest
+    needs: [production-health-checks]
+    if: success()
+    
+    steps:
+    - name: Send success notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "✅ Production deployment completed successfully"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

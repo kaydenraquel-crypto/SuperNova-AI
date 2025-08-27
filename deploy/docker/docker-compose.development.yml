@@ -1,0 +1,253 @@
+version: '3.8'
+
+services:
+  # Main SuperNova AI Application
+  supernova:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: development
+    container_name: supernova_dev
+    environment:
+      - SUPERNOVA_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    env_file:
+      - ../../.env.development
+    ports:
+      - "8000:8000"  # FastAPI
+      - "8001:8001"  # WebSocket
+      - "9090:9090"  # Metrics
+      - "5678:5678"  # Debug port
+    volumes:
+      - ../../:/app
+      - dev_data:/app/data
+      - dev_logs:/app/logs
+      - dev_config:/app/config
+      - dev_secrets:/app/secrets
+    depends_on:
+      - postgres-dev
+      - redis-dev
+      - timescale-dev
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database (Development)
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: postgres_dev
+    environment:
+      POSTGRES_DB: supernova_dev
+      POSTGRES_USER: supernova_dev
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ../../migrations:/docker-entrypoint-initdb.d
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supernova_dev -d supernova_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # TimescaleDB (Development)
+  timescale-dev:
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescale_dev
+    environment:
+      POSTGRES_DB: supernova_timescale_dev
+      POSTGRES_USER: supernova_dev
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescale_dev_data:/var/lib/postgresql/data
+      - ../../migrations/timescale:/docker-entrypoint-initdb.d
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supernova_dev -d supernova_timescale_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (Development)
+  redis-dev:
+    image: redis:7-alpine
+    container_name: redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Ollama for Local LLM (Development)
+  ollama-dev:
+    image: ollama/ollama:latest
+    container_name: ollama_dev
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_dev_data:/root/.ollama
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus (Metrics)
+  prometheus-dev:
+    image: prom/prometheus:latest
+    container_name: prometheus_dev
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus_dev_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+
+  # Grafana (Monitoring Dashboard)
+  grafana-dev:
+    image: grafana/grafana:latest
+    container_name: grafana_dev
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=dev_password
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    depends_on:
+      - prometheus-dev
+
+  # pgAdmin (Database Management)
+  pgadmin-dev:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@supernova-ai.com
+      PGADMIN_DEFAULT_PASSWORD: dev_password
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_dev_data:/var/lib/pgadmin
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    depends_on:
+      - postgres-dev
+      - timescale-dev
+
+  # Redis Commander (Redis Management)
+  redis-commander-dev:
+    image: rediscommander/redis-commander:latest
+    container_name: redis_commander_dev
+    environment:
+      - REDIS_HOSTS=local:redis-dev:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+    depends_on:
+      - redis-dev
+
+  # File Browser (Development Files)
+  filebrowser-dev:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser_dev
+    ports:
+      - "8080:80"
+    volumes:
+      - ../../:/srv
+      - filebrowser_dev_config:/config
+    environment:
+      - FB_BASEURL=/files
+    networks:
+      - supernova-dev
+    restart: unless-stopped
+
+volumes:
+  # Application volumes
+  dev_data:
+    driver: local
+  dev_logs:
+    driver: local
+  dev_config:
+    driver: local
+  dev_secrets:
+    driver: local
+
+  # Database volumes
+  postgres_dev_data:
+    driver: local
+  timescale_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+  # LLM volumes
+  ollama_dev_data:
+    driver: local
+
+  # Monitoring volumes
+  prometheus_dev_data:
+    driver: local
+  grafana_dev_data:
+    driver: local
+
+  # Management tool volumes
+  pgadmin_dev_data:
+    driver: local
+  filebrowser_dev_config:
+    driver: local
+
+networks:
+  supernova-dev:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

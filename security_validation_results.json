@@ -1,0 +1,281 @@
+{
+  "timestamp": "2025-08-26T15:04:41.788361",
+  "validation_id": "security_20250826_150441",
+  "security_tests": {
+    "security_files": {
+      "status": "PASSED",
+      "details": {
+        "authentication": {
+          "file_exists": true,
+          "file_size": 23284,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": false,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 83.33333333333334
+        },
+        "security_config": {
+          "file_exists": true,
+          "file_size": 13544,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": true,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 100.0
+        },
+        "encryption": {
+          "file_exists": true,
+          "file_size": 28001,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": true,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 100.0
+        },
+        "input_validation": {
+          "file_exists": true,
+          "file_size": 22229,
+          "security_patterns_found": {
+            "password_hashing": false,
+            "encryption": true,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 83.33333333333334
+        },
+        "rate_limiting": {
+          "file_exists": true,
+          "file_size": 30165,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": false,
+            "authentication": true,
+            "validation": false,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 66.66666666666666
+        },
+        "web_security": {
+          "file_exists": true,
+          "file_size": 29194,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": false,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 83.33333333333334
+        },
+        "security_logger": {
+          "file_exists": true,
+          "file_size": 21046,
+          "security_patterns_found": {
+            "password_hashing": true,
+            "encryption": true,
+            "authentication": true,
+            "validation": true,
+            "rate_limiting": true,
+            "logging": true
+          },
+          "security_score": 100.0
+        }
+      },
+      "errors": [],
+      "warnings": [],
+      "security_patterns": {
+        "overall_score": 88.0952380952381
+      }
+    },
+    "configuration_security": {
+      "status": "WARNING",
+      "details": {
+        "environment_variables": {
+          "SECRET_KEY": "NOT_SET",
+          "JWT_SECRET": "NOT_SET",
+          "ENCRYPTION_KEY": "NOT_SET",
+          "DATABASE_URL": "NOT_SET",
+          "API_KEY": "NOT_SET",
+          "OPENAI_API_KEY": "NOT_SET"
+        },
+        "env_vars_set": "0/6",
+        "main_config": {
+          "cors_configured": false,
+          "https_configured": true,
+          "session_security": false,
+          "rate_limiting": true
+        },
+        "security_config": {
+          "cors_configured": true,
+          "https_configured": true,
+          "session_security": false,
+          "rate_limiting": true
+        }
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "input_sanitization": {
+      "status": "PASSED",
+      "details": {
+        "supernova/input_validation.py": {
+          "file_exists": true,
+          "validation_patterns_found": 65,
+          "patterns_detail": [
+            {
+              "pattern": "validate\\w*\\(",
+              "matches": 44
+            },
+            {
+              "pattern": "sanitize\\w*\\(",
+              "matches": 2
+            },
+            {
+              "pattern": "escape\\w*\\(",
+              "matches": 5
+            },
+            {
+              "pattern": "clean\\w*\\(",
+              "matches": 1
+            },
+            {
+              "pattern": "bleach\\.",
+              "matches": 1
+            },
+            {
+              "pattern": "html\\.escape",
+              "matches": 5
+            },
+            {
+              "pattern": "pydantic",
+              "matches": 6
+            },
+            {
+              "pattern": "BaseModel",
+              "matches": 1
+            }
+          ]
+        },
+        "supernova/api.py": {
+          "file_exists": true,
+          "validation_patterns_found": 13,
+          "patterns_detail": [
+            {
+              "pattern": "filter\\w*\\(",
+              "matches": 13
+            }
+          ]
+        },
+        "supernova/schemas.py": {
+          "file_exists": true,
+          "validation_patterns_found": 66,
+          "patterns_detail": [
+            {
+              "pattern": "pydantic",
+              "matches": 1
+            },
+            {
+              "pattern": "BaseModel",
+              "matches": 65
+            }
+          ]
+        },
+        "supernova/web_security.py": {
+          "file_exists": true,
+          "validation_patterns_found": 23,
+          "patterns_detail": [
+            {
+              "pattern": "validate\\w*\\(",
+              "matches": 16
+            },
+            {
+              "pattern": "sanitize\\w*\\(",
+              "matches": 3
+            },
+            {
+              "pattern": "escape\\w*\\(",
+              "matches": 1
+            },
+            {
+              "pattern": "clean\\w*\\(",
+              "matches": 1
+            },
+            {
+              "pattern": "bleach\\.",
+              "matches": 1
+            },
+            {
+              "pattern": "re\\.escape",
+              "matches": 1
+            }
+          ]
+        },
+        "summary": {
+          "total_validation_patterns": 167,
+          "files_with_validation": 4,
+          "validation_coverage": "4/4"
+        }
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "ssl_tls_config": {
+      "status": "PASSED",
+      "details": {
+        "main.py": {
+          "ssl_patterns_found": [],
+          "has_ssl_config": false
+        },
+        "supernova/config.py": {
+          "ssl_patterns_found": [
+            "ssl",
+            "https",
+            "cert"
+          ],
+          "has_ssl_config": true
+        },
+        "supernova/api.py": {
+          "ssl_patterns_found": [],
+          "has_ssl_config": false
+        },
+        "supernova/web_security.py": {
+          "ssl_patterns_found": [
+            "ssl",
+            "https"
+          ],
+          "has_ssl_config": true
+        },
+        "summary": {
+          "total_ssl_references": 5,
+          "files_with_ssl_config": 2
+        },
+        "ssl_env_vars_set": []
+      },
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "summary": {
+    "total_tests": 4,
+    "passed": 3,
+    "failed": 0,
+    "warnings": 1,
+    "security_score": 87.5
+  }
+}
