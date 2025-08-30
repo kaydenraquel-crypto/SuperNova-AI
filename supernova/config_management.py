@@ -28,7 +28,8 @@ from abc import ABC, abstractmethod
 import threading
 from contextlib import contextmanager
 
-from pydantic import BaseSettings, Field, validator, root_validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator, root_validator
 from cryptography.fernet import Fernet
 import yaml
 import aiofiles

@@ -1,26 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { LinearProgress, Box } from '@mui/material';
-import { useRouter } from 'next/router';
+import { useLocation } from 'react-router-dom';
 
 const ProgressBar: React.FC = () => {
   const [loading, setLoading] = useState(false);
-
-  // In a real React Router setup, you would use:
-  // import { useNavigate, useLocation } from 'react-router-dom';
-  // const location = useLocation();
+  const location = useLocation();
 
   useEffect(() => {
-    // Listen for route changes
-    const handleStart = () => setLoading(true);
-    const handleComplete = () => setLoading(false);
-
-    // For now, just show loading state briefly
-    // In real app, you'd connect this to your routing system
+    // Show loading briefly when location changes
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 300);
     
-    return () => {
-      // Cleanup listeners
-    };
-  }, []);
+    return () => clearTimeout(timer);
+  }, [location]);
 
   if (!loading) return null;
 

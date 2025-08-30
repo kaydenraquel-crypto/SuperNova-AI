@@ -28,9 +28,9 @@ import {
 } from '@mui/icons-material';
 import { Helmet } from 'react-helmet-async';
 import { useForm, Controller } from 'react-hook-form';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme as useAppTheme } from '@/hooks/useTheme';
-import LoadingScreen from '@/components/common/LoadingScreen';
+import { useAuth } from '../hooks/useAuth';
+import { useTheme as useAppTheme } from '../hooks/useTheme';
+import LoadingScreen from '../components/common/LoadingScreen';
 
 interface LoginFormData {
   email: string;

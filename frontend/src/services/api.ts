@@ -43,8 +43,8 @@ interface AuthResponse {
 // API Configuration
 const defaultConfig: ApiConfig = {
   baseURL: process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8081/api'
-    : '/api',
+    ? 'http://localhost:8000'
+    : '',
   timeout: 30000,
   retryAttempts: 3,
 };
@@ -101,7 +101,9 @@ class ApiService {
           } catch (refreshError) {
             // Refresh failed, clear tokens and redirect to login
             this.clearTokens();
-            window.location.href = '/login';
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
             return Promise.reject(refreshError);
           }
         }
@@ -214,7 +216,7 @@ class ApiService {
 
   // Portfolio Methods
   async getPortfolioOverview(): Promise<any> {
-    const response = await this.client.get('/portfolio/overview');
+    const response = await this.client.get('/api/analytics/portfolio/overview');
     return response.data;
   }
 
@@ -223,8 +225,8 @@ class ApiService {
     return response.data;
   }
 
-  async getPortfolioPerformance(timeframe: string = '1Y'): Promise<any> {
-    const response = await this.client.get(`/portfolio/performance?timeframe=${timeframe}`);
+  async getPortfolioPerformance(portfolioId: number, timeframe: string = '1Y'): Promise<any> {
+    const response = await this.client.get(`/api/analytics/portfolio/${portfolioId}/performance?timeframe=${timeframe}`);
     return response.data;
   }
 
@@ -373,6 +375,12 @@ class ApiService {
   // Utility Methods
   async healthCheck(): Promise<any> {
     const response = await this.client.get('/health');
+    return response.data;
+  }
+
+  // Collaboration Health Check
+  async collaborationHealthCheck(): Promise<any> {
+    const response = await this.client.get('/api/collaboration/health');
     return response.data;
   }
 

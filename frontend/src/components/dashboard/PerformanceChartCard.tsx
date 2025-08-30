@@ -11,7 +11,7 @@ import {
   Chip,
 } from '@mui/material';
 import { ShowChart, Timeline } from '@mui/icons-material';
-import FinancialChart from '@/components/charts/FinancialChart';
+import FinancialChart from '../charts/FinancialChart';
 
 interface PerformanceData {
   dates: string[];

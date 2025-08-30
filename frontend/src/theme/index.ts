@@ -479,6 +479,16 @@ export const getChartColors = (mode: PaletteMode = 'light') => {
 
 // Responsive breakpoint utilities
 export const useResponsive = () => {
+  if (typeof window === 'undefined') {
+    // Default to desktop during SSR or in Node.js environment
+    return {
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+      isLarge: false,
+    };
+  }
+  
   return {
     isMobile: window.innerWidth < 600,
     isTablet: window.innerWidth >= 600 && window.innerWidth < 900,

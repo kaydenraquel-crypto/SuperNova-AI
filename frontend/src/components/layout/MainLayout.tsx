@@ -47,9 +47,9 @@ import {
   Security,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme as useAppTheme } from '@/hooks/useTheme';
-import type { ConnectionStatus, NotificationMessage } from '@/hooks/useWebSocket';
+import { useAuth } from '../../hooks/useAuth';
+import { useTheme as useAppTheme } from '../../hooks/useTheme';
+import type { ConnectionStatus, NotificationMessage } from '../../hooks/useWebSocket';
 
 const DRAWER_WIDTH = 280;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -297,7 +297,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         {hasChildren && !drawerCollapsed && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {item.children!.map(child => renderNavigationItem(child, depth + 1))}
+              {item.children!.map(child => <div key={child.id}>{renderNavigationItem(child, depth + 1)}</div>)}
             </List>
           </Collapse>
         )}
@@ -329,7 +329,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       {/* Navigation */}
       <List sx={{ flexGrow: 1, py: 1 }}>
-        {navigationItems.map(item => renderNavigationItem(item))}
+        {navigationItems.map(item => <div key={item.id}>{renderNavigationItem(item)}</div>)}
       </List>
 
       <Divider />

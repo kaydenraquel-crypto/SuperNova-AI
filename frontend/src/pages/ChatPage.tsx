@@ -49,21 +49,13 @@ import {
 import { Helmet } from 'react-helmet-async';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 
-// Components
-import MessageBubble from '@/components/chat/MessageBubble';
-import TypingIndicator from '@/components/chat/TypingIndicator';
-import ChatSuggestions from '@/components/chat/ChatSuggestions';
-import VoiceRecorder from '@/components/chat/VoiceRecorder';
-import FileUploader from '@/components/chat/FileUploader';
-import ChatHeader from '@/components/chat/ChatHeader';
-
 // Hooks
-import { useAuth } from '@/hooks/useAuth';
-import { useChatWebSocket } from '@/hooks/useWebSocket';
-import { useThemeColors } from '@/hooks/useTheme';
+import { useAuth } from '../hooks/useAuth';
+import { useChatWebSocket } from '../hooks/useWebSocket';
+import { useThemeColors } from '../hooks/useTheme';
 
 // Services
-import { apiService } from '@/services/api';
+import { apiService } from '../services/api';
 
 // Types
 interface ChatMessage {
@@ -91,6 +83,89 @@ interface ChatSession {
 
 const DRAWER_WIDTH = 300;
 
+// Placeholder components
+const MessageBubble: React.FC<{ message: ChatMessage; isOwn: boolean }> = ({ message, isOwn }) => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: isOwn ? 'flex-end' : 'flex-start',
+      mb: 2,
+    }}
+  >
+    <Paper
+      sx={{
+        p: 2,
+        maxWidth: '70%',
+        bgcolor: isOwn ? 'primary.main' : 'background.paper',
+        color: isOwn ? 'primary.contrastText' : 'text.primary',
+      }}
+    >
+      <Typography>{message.content}</Typography>
+    </Paper>
+  </Box>
+);
+
+const TypingIndicator: React.FC<{ message: string }> = ({ message }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <CircularProgress size={16} />
+    <Typography variant="body2" color="text.secondary">
+      {message}
+    </Typography>
+  </Box>
+);
+
+const ChatSuggestions: React.FC<{ suggestions: string[]; onSuggestionClick: (suggestion: string) => void }> = ({ suggestions, onSuggestionClick }) => (
+  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+    {suggestions.map((suggestion, index) => (
+      <Chip
+        key={index}
+        label={suggestion}
+        variant="outlined"
+        clickable
+        onClick={() => onSuggestionClick(suggestion)}
+      />
+    ))}
+  </Box>
+);
+
+const VoiceRecorder: React.FC<{ onRecordingComplete: (blob: Blob) => void; disabled: boolean }> = ({ disabled }) => (
+  <Tooltip title="Voice message">
+    <IconButton disabled={disabled}>
+      <Mic />
+    </IconButton>
+  </Tooltip>
+);
+
+const ChatHeader: React.FC<{ session: any; connectionStatus: string; onToggleSidebar: () => void; onMenuOpen: (event: React.MouseEvent<HTMLElement>) => void }> = ({ session, connectionStatus, onToggleSidebar, onMenuOpen }) => {
+  const theme = useTheme();
+  return (
+  <Box
+    sx={{
+      p: 2,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Avatar sx={{ bgcolor: 'primary.main' }}>
+        <SmartToy />
+      </Avatar>
+      <Box>
+        <Typography variant="h6">AI Financial Advisor</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {connectionStatus === 'connected' ? 'Online' : 'Connecting...'}
+        </Typography>
+      </Box>
+    </Box>
+    <IconButton onClick={onMenuOpen}>
+      <MoreVert />
+    </IconButton>
+  </Box>
+  );
+};
+
 const ChatPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -106,7 +181,7 @@ const ChatPage: React.FC = () => {
   const [attachmentMenuAnchor, setAttachmentMenuAnchor] = useState<null | HTMLElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   // WebSocket connection for real-time chat
@@ -205,14 +280,14 @@ const ChatPage: React.FC = () => {
     }
   }, [message, currentSessionId, sendChatMessage, sendMessageMutation]);
 
-  const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
     }
   }, [handleSendMessage]);
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setMessage(event.target.value);
     
     // Send typing indicator
@@ -265,7 +340,10 @@ const ChatPage: React.FC = () => {
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
     setMessage(suggestion);
-    messageInputRef.current?.focus();
+    // Focus the input field after setting the suggestion
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 0);
   }, []);
 
   const currentSession = sessions?.find(s => s.id === currentSessionId);
@@ -453,7 +531,7 @@ const ChatPage: React.FC = () => {
 
               {/* Message Input */}
               <TextField
-                ref={messageInputRef}
+                inputRef={messageInputRef}
                 fullWidth
                 multiline
                 maxRows={4}

@@ -123,7 +123,7 @@ class UsageAnalyticsRequest(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     key_id: Optional[str] = None
-    group_by: str = Field("hour", regex="^(hour|day|week|month)$")
+    group_by: str = Field("hour", pattern="^(hour|day|week|month)$")
     metrics: Optional[List[UsageMetricType]] = None
     
     @validator('start_date', 'end_date')
@@ -157,7 +157,7 @@ class RateLimitConfigRequest(BaseModel):
     requests_per_hour: int = Field(..., ge=1, le=10000000)
     requests_per_day: int = Field(..., ge=1, le=100000000)
     burst_capacity: int = Field(..., ge=1, le=10000)
-    algorithm: str = Field("adaptive", regex="^(token_bucket|sliding_window|fixed_window|adaptive)$")
+    algorithm: str = Field("adaptive", pattern="^(token_bucket|sliding_window|fixed_window|adaptive)$")
     
     @validator('requests_per_hour')
     def validate_hour_limit(cls, v, values):
@@ -189,7 +189,7 @@ class RateLimitConfigResponse(BaseModel):
 class SecurityEventRequest(BaseModel):
     """Request to report a security event"""
     event_type: str
-    severity: str = Field("low", regex="^(low|medium|high|critical)$")
+    severity: str = Field("low", pattern="^(low|medium|high|critical)$")
     description: str
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
@@ -275,7 +275,7 @@ class DashboardMetricsResponse(BaseModel):
 
 class WebhookConfigRequest(BaseModel):
     """Request to configure webhooks"""
-    url: str = Field(..., regex=r'^https?://.+')
+    url: str = Field(..., pattern=r'^https?://.+')
     events: List[str] = Field(..., min_items=1)
     secret: Optional[str] = Field(None, min_length=10)
     is_active: bool = Field(True)
@@ -307,7 +307,7 @@ class WebhookConfigResponse(BaseModel):
 
 class BulkOperationRequest(BaseModel):
     """Request for bulk operations"""
-    operation: str = Field(..., regex="^(revoke|activate|deactivate|update_tier)$")
+    operation: str = Field(..., pattern="^(revoke|activate|deactivate|update_tier)$")
     key_ids: List[str] = Field(..., min_items=1, max_items=100)
     parameters: Optional[Dict[str, Any]] = None
 
@@ -344,8 +344,8 @@ class APIManagementConfigResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     """Request to export data"""
-    export_type: str = Field(..., regex="^(usage|keys|security|analytics)$")
-    format: str = Field("json", regex="^(json|csv|xlsx)$")
+    export_type: str = Field(..., pattern="^(usage|keys|security|analytics)$")
+    format: str = Field("json", pattern="^(json|csv|xlsx)$")
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     filters: Optional[Dict[str, Any]] = None

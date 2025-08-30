@@ -34,23 +34,34 @@ module.exports = (env, argv) => {
     module: {
       rules: [
         {
-          test: /\\.(ts|tsx)$/,
-          use: 'ts-loader',
+          test: /\.(js|jsx|ts|tsx)$/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  '@babel/preset-env',
+                  '@babel/preset-react',
+                  '@babel/preset-typescript'
+                ]
+              }
+            }
+          ],
           exclude: /node_modules/
         },
         {
-          test: /\\.css$/,
+          test: /\.css$/,
           use: ['style-loader', 'css-loader']
         },
         {
-          test: /\\.(png|svg|jpg|jpeg|gif|ico)$/,
+          test: /\.(png|svg|jpg|jpeg|gif|ico)$/,
           type: 'asset/resource',
           generator: {
             filename: 'images/[name].[hash][ext]'
           }
         },
         {
-          test: /\\.(woff|woff2|eot|ttf|otf)$/,
+          test: /\.(woff|woff2|eot|ttf|otf)$/,
           type: 'asset/resource',
           generator: {
             filename: 'fonts/[name].[hash][ext]'
@@ -92,7 +103,7 @@ module.exports = (env, argv) => {
           clientsClaim: true,
           skipWaiting: true,
           runtimeCaching: [{
-            urlPattern: /^https:\\/\\/fonts\\.(googleapis|gstatic)\\.com\\/.*/,
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts',
@@ -112,7 +123,7 @@ module.exports = (env, argv) => {
               }
             }
           }, {
-            urlPattern: /^https:\\/\\/api\\//,
+            urlPattern: /^https:\/\/api\//,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
@@ -135,18 +146,14 @@ module.exports = (env, argv) => {
       hot: true,
       open: true,
       historyApiFallback: true,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8081',
+      proxy: [
+        {
+          context: ['/api'],
+          target: 'http://localhost:8001',
           changeOrigin: true,
           secure: false
-        },
-        '/ws': {
-          target: 'ws://localhost:8081',
-          ws: true,
-          changeOrigin: true
         }
-      }
+      ]
     },
     optimization: {
       splitChunks: {
@@ -173,9 +180,9 @@ module.exports = (env, argv) => {
       }
     },
     performance: {
-      maxAssetSize: 512000,
-      maxEntrypointSize: 512000,
-      hints: isProduction ? 'warning' : false
+      maxAssetSize: 1500000, // 1.5MB - Realistic for financial app with charts
+      maxEntrypointSize: 1500000,
+      hints: isProduction ? 'error' : false // Fail builds that are too large
     }
   };
 };

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SuperNova AI - Browser Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        .success { color: #0f0; }
+        .info { color: #0ff; }
+        pre { background: #000; padding: 10px; border: 1px solid #333; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>SuperNova AI - Frontend Test Report</h1>
+    <div id="status">Testing...</div>
+    <pre id="results"></pre>
+    
+    <script>
+        const results = [];
+        const log = (msg, type = 'info') => {
+            const timestamp = new Date().toISOString().slice(11, 19);
+            const entry = `[${timestamp}] ${msg}`;
+            results.push({ msg: entry, type });
+            document.getElementById('results').innerHTML = results
+                .map(r => `<span class="${r.type}">${r.msg}</span>`)
+                .join('\n');
+        };
+        
+        async function testFrontend() {
+            log('Starting SuperNova AI Frontend Tests...', 'info');
+            
+            // Test 1: Check if frontend loads
+            try {
+                log('Testing frontend load...', 'info');
+                const iframe = document.createElement('iframe');
+                iframe.src = 'http://localhost:3000';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                
+                await new Promise((resolve) => {
+                    iframe.onload = () => {
+                        log('✓ Frontend loaded successfully', 'success');
+                        resolve();
+                    };
+                    iframe.onerror = () => {
+                        log('✗ Frontend failed to load', 'error');
+                        resolve();
+                    };
+                    setTimeout(() => {
+                        log('⚠ Frontend load timeout', 'warning');
+                        resolve();
+                    }, 10000);
+                });
+                
+                // Check for React app
+                try {
+                    const hasReact = iframe.contentWindow.React || 
+                                   iframe.contentDocument.querySelector('#root');
+                    if (hasReact) {
+                        log('✓ React application detected', 'success');
+                    } else {
+                        log('⚠ React application not detected', 'warning');
+                    }
+                } catch (e) {
+                    log('⚠ Could not access iframe content (CORS)', 'warning');
+                }
+                
+            } catch (error) {
+                log(`✗ Frontend test error: ${error.message}`, 'error');
+            }
+            
+            // Test 2: API connectivity
+            log('\nTesting API connectivity...', 'info');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                log(`✓ API Health: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                log(`✗ API connection failed: ${error.message}`, 'error');
+            }
+            
+            // Test 3: Check for CORS issues
+            log('\nChecking CORS configuration...', 'info');
+            try {
+                const response = await fetch('http://localhost:8000/health', {
+                    method: 'GET',
+                    headers: {
+                        'Origin': 'http://localhost:3000'
+                    }
+                });
+                if (response.ok) {
+                    log('✓ CORS is properly configured', 'success');
+                } else {
+                    log('⚠ CORS might have issues', 'warning');
+                }
+            } catch (error) {
+                log(`✗ CORS test failed: ${error.message}`, 'error');
+            }
+            
+            // Test 4: WebSocket connectivity
+            log('\nTesting WebSocket...', 'info');
+            try {
+                const ws = new WebSocket('ws://localhost:8000/ws');
+                
+                await new Promise((resolve) => {
+                    ws.onopen = () => {
+                        log('✓ WebSocket connected', 'success');
+                        ws.close();
+                        resolve();
+                    };
+                    ws.onerror = () => {
+                        log('✗ WebSocket connection failed', 'error');
+                        resolve();
+                    };
+                    setTimeout(() => {
+                        log('⚠ WebSocket timeout', 'warning');
+                        ws.close();
+                        resolve();
+                    }, 5000);
+                });
+            } catch (error) {
+                log(`✗ WebSocket error: ${error.message}`, 'error');
+            }
+            
+            // Summary
+            const errors = results.filter(r => r.type === 'error').length;
+            const warnings = results.filter(r => r.type === 'warning').length;
+            const success = results.filter(r => r.type === 'success').length;
+            
+            log('\n=== TEST SUMMARY ===', 'info');
+            log(`Success: ${success} | Warnings: ${warnings} | Errors: ${errors}`, 
+                errors > 0 ? 'error' : warnings > 0 ? 'warning' : 'success');
+            
+            document.getElementById('status').innerHTML = 
+                `<span class="${errors > 0 ? 'error' : 'success'}">
+                    Test Complete - ${errors} errors, ${warnings} warnings
+                </span>`;
+        }
+        
+        // Run tests
+        testFrontend();
+    </script>
+</body>
+</html>

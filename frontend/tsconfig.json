@@ -45,9 +45,7 @@
     }
   },
   "include": [
-    "src/**/*",
-    "src/**/*.tsx",
-    "src/**/*.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
@@ -56,6 +54,10 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "**/setupTests.ts",
+    "**/test-utils/**/*",
+    "**/__tests__/**/*",
+    "**/mocks/**/*"
   ]
 }

@@ -1,0 +1,48 @@
+{
+  "backend": {
+    "health": {
+      "status": "SUCCESS",
+      "data": {
+        "ok": true,
+        "torch_model": true,
+        "talib_available": true,
+        "talib_version": "0.6.6",
+        "talib_functions": 158,
+        "indicators_engine": "talib"
+      }
+    },
+    "/api/indicators/health": {
+      "status": "SUCCESS",
+      "code": 200
+    },
+    "/api/indicators/functions/all": {
+      "status": "ERROR",
+      "code": 404
+    },
+    "/api/history": {
+      "status": "ERROR",
+      "code": 422
+    },
+    "/api/alpha-vantage/health": {
+      "status": "SUCCESS",
+      "code": 200
+    },
+    "websocket": {
+      "status": "ERROR",
+      "error": "Connection failed"
+    }
+  },
+  "frontend": {
+    "availability": {
+      "status": "SUCCESS",
+      "statusCode": 200
+    }
+  },
+  "errors": [
+    "/api/indicators/functions/all returned status 404",
+    "/api/history returned status 422",
+    "WebSocket connection failed",
+    "WebSocket test error: Received network error or non-101 status code."
+  ],
+  "warnings": []
+}

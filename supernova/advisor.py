@@ -116,8 +116,10 @@ def _get_cache_key(bars_hash: str, risk_score: int, sentiment: float, template: 
         f"{bars_hash}_{risk_score}_{sentiment}_{template}_{params_hash}".encode()
     ).hexdigest()
 
-# Simple in-memory cache (use Redis in production)
-_llm_cache: Dict[str, Tuple[str, float]] = {}  # cache_key -> (response, timestamp)
+# Simple in-memory cache with size limit (use Redis in production)
+from collections import OrderedDict
+_llm_cache: OrderedDict[str, Tuple[str, float]] = OrderedDict()  # LRU cache with size limit
+MAX_CACHE_SIZE = 1000  # Limit cache to prevent memory issues
 
 def _get_cached_response(cache_key: str) -> Optional[str]:
     """Get cached LLM response if still valid."""
@@ -133,16 +135,15 @@ def _get_cached_response(cache_key: str) -> Optional[str]:
     return None
 
 def _cache_response(cache_key: str, response: str):
-    """Cache LLM response."""
+    """Cache LLM response with proper LRU eviction."""
     if settings.LLM_CACHE_ENABLED:
         _llm_cache[cache_key] = (response, time.time())
+        _llm_cache.move_to_end(cache_key)  # Mark as most recently used
         
-        # Simple cache size management
-        if len(_llm_cache) > 1000:
-            # Remove oldest 100 entries
-            sorted_items = sorted(_llm_cache.items(), key=lambda x: x[1][1])
-            for key, _ in sorted_items[:100]:
-                del _llm_cache[key]
+        # Enforce cache size limit with LRU eviction
+        while len(_llm_cache) > MAX_CACHE_SIZE:
+            # Remove least recently used entry
+            _llm_cache.popitem(last=False)
 
 def _get_llm_model() -> Optional[BaseLanguageModel]:
     """Initialize and return the configured LLM model."""

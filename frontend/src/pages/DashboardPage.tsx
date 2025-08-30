@@ -32,22 +32,16 @@ import { Helmet } from 'react-helmet-async';
 import { useQuery } from 'react-query';
 
 // Components
-import PortfolioOverviewCard from '@/components/dashboard/PortfolioOverviewCard';
-import MarketOverviewCard from '@/components/dashboard/MarketOverviewCard';
-import WatchlistCard from '@/components/dashboard/WatchlistCard';
-import RecentTransactionsCard from '@/components/dashboard/RecentTransactionsCard';
-import PerformanceChartCard from '@/components/dashboard/PerformanceChartCard';
-import AlertsCard from '@/components/dashboard/AlertsCard';
-import NewsCard from '@/components/dashboard/NewsCard';
-import QuickActionsCard from '@/components/dashboard/QuickActionsCard';
+import PortfolioOverviewCard from '../components/dashboard/PortfolioOverviewCard';
+import PerformanceChartCard from '../components/dashboard/PerformanceChartCard';
 
 // Hooks
-import { useAuth } from '@/hooks/useAuth';
-import { useMarketData } from '@/hooks/useWebSocket';
-import { useThemeColors } from '@/hooks/useTheme';
+import { useAuth } from '../hooks/useAuth';
+import { useMarketData } from '../hooks/useWebSocket';
+import { useThemeColors } from '../hooks/useTheme';
 
 // Services
-import { apiService } from '@/services/api';
+import { apiService } from '../services/api';
 
 // Types
 interface DashboardData {
@@ -239,7 +233,14 @@ const DashboardPage: React.FC = () => {
 
           {/* Quick Actions */}
           <Grid item xs={12} lg={4}>
-            <QuickActionsCard />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Quick Actions</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Quick actions will be available here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Performance Chart */}
@@ -252,43 +253,62 @@ const DashboardPage: React.FC = () => {
 
           {/* Market Overview */}
           <Grid item xs={12} lg={4}>
-            <MarketOverviewCard
-              indices={dashboardData?.marketIndices}
-              realTimeData={marketData}
-              isLoading={isLoading}
-            />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Market Overview</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Market data will be displayed here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Watchlist */}
           <Grid item xs={12} md={6}>
-            <WatchlistCard
-              data={dashboardData?.watchlist}
-              isLoading={isLoading}
-            />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Watchlist</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your watchlist will be displayed here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Recent Transactions */}
           <Grid item xs={12} md={6}>
-            <RecentTransactionsCard
-              data={dashboardData?.recentTransactions}
-              isLoading={isLoading}
-            />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Recent Transactions</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Recent transactions will be displayed here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Alerts */}
           <Grid item xs={12} md={6}>
-            <AlertsCard
-              alerts={dashboardData?.alerts}
-              isLoading={isLoading}
-            />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Alerts</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your alerts will be displayed here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* News */}
           <Grid item xs={12} md={6}>
-            <NewsCard
-              news={dashboardData?.news}
-              isLoading={isLoading}
-            />
+            <Card>
+              <CardContent>
+                <Typography variant="h6">Financial News</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Latest financial news will be displayed here.
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
 

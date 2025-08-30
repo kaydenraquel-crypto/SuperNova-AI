@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 engine = create_engine(settings.DATABASE_URL, echo=False, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
+def get_db():
+    """Get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # TimescaleDB engine for time-series sentiment data (optional)
 timescale_engine = None
 TimescaleSessionLocal = None
@@ -42,11 +50,19 @@ def get_timescale_connection_url() -> Optional[str]:
     
     port = getattr(settings, 'TIMESCALE_PORT', 5432)
     
+    # Use URL encoding to protect against injection in connection strings
+    from urllib.parse import quote_plus
+    
+    encoded_user = quote_plus(settings.TIMESCALE_USER)
+    encoded_password = quote_plus(settings.TIMESCALE_PASSWORD)
+    encoded_host = quote_plus(settings.TIMESCALE_HOST)
+    encoded_db = quote_plus(settings.TIMESCALE_DB)
+    
     return (
         f"postgresql+psycopg2://"
-        f"{settings.TIMESCALE_USER}:{settings.TIMESCALE_PASSWORD}@"
-        f"{settings.TIMESCALE_HOST}:{port}/"
-        f"{settings.TIMESCALE_DB}"
+        f"{encoded_user}:{encoded_password}@"
+        f"{encoded_host}:{port}/"
+        f"{encoded_db}?sslmode=require"
     )
 
 def init_timescale_db():
@@ -142,13 +158,8 @@ class User(Base):
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="user")
     context: Mapped["UserContext"] = relationship(back_populates="user", uselist=False)
     
-    # Collaboration relationships (will be added when collaboration_models is imported)
-    teams: Mapped[list["Team"]] = relationship(
-        "Team", 
-        secondary="team_members",
-        back_populates="members",
-        overlaps="teams"
-    )
+    # Collaboration relationships - defined after importing collaboration_models
+    # teams relationship will be added dynamically when collaboration_models is imported
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -251,7 +262,7 @@ class ConversationMessage(Base):
     memory_type: Mapped[str] = mapped_column(String(50), default="user_message")
     importance_score: Mapped[float] = mapped_column(Float, default=0.5)
     context_tags: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array as string
-    metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON object as string
+    msg_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON object as string
     
     # Timing
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -584,3 +595,12 @@ def init_db():
             logger.error(f"Error creating TimescaleDB tables: {e}")
     
     return engine, timescale_engine_instance
+
+
+def get_db():
+    """Dependency function for FastAPI to get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

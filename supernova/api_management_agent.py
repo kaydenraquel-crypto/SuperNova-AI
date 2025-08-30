@@ -188,10 +188,17 @@ class APIManagementAgent:
     
     def _start_background_tasks(self):
         """Start background maintenance and monitoring tasks"""
-        asyncio.create_task(self._update_performance_metrics())
-        asyncio.create_task(self._cleanup_expired_data())
-        asyncio.create_task(self._detect_anomalies())
-        asyncio.create_task(self._update_quota_usage())
+        try:
+            # Only create tasks if there's a running event loop
+            loop = asyncio.get_running_loop()
+            asyncio.create_task(self._update_performance_metrics())
+            asyncio.create_task(self._cleanup_expired_data())
+            asyncio.create_task(self._detect_anomalies())
+            asyncio.create_task(self._update_quota_usage())
+            logger.info("API Management background tasks started")
+        except RuntimeError:
+            # No event loop running - tasks will be created when API starts
+            logger.debug("No event loop running, background tasks will start later")
     
     # ========================================
     # API KEY MANAGEMENT
@@ -577,7 +584,7 @@ class APIManagementAgent:
         # Rate limiting check
         context = self._determine_rate_limit_context(endpoint)
         allowed, rate_info = await self.rate_limiter.check_rate_limit(
-            request, context, user_id, key_id
+            request, context
         )
         
         if not allowed:

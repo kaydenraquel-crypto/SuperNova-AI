@@ -26,7 +26,11 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.exceptions import InvalidToken
+try:
+    from cryptography.exceptions import InvalidToken
+except ImportError:
+    # Fallback for newer cryptography versions
+    from cryptography.exceptions import InvalidKey as InvalidToken
 
 # Core imports
 from .config import settings
@@ -81,7 +85,7 @@ class EncryptedAPIKey(Base):
     expires_at = Column(DateTime, nullable=True)
     last_used_at = Column(DateTime, nullable=True)
     usage_count = Column(Integer, default=0)
-    metadata = Column(Text, nullable=True)  # JSON metadata
+    key_metadata = Column(Text, nullable=True)  # JSON metadata
 
 class KeyAuditLog(Base):
     """Audit log for API key operations"""
@@ -95,7 +99,7 @@ class KeyAuditLog(Base):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(500), nullable=True)
     error_message = Column(Text, nullable=True)
-    metadata = Column(Text, nullable=True)
+    audit_metadata = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 class SecureKeyManager:

@@ -79,9 +79,14 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): WebSocketHookRe
 
   // Get WebSocket URL based on environment
   const getWebSocketUrl = useCallback(() => {
+    if (typeof window === 'undefined') {
+      // Fallback for SSR
+      return 'ws://localhost:8000';
+    }
+    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = process.env.NODE_ENV === 'development' 
-      ? 'localhost:8081' 
+      ? 'localhost:8000' 
       : window.location.host;
     return `${protocol}//${host}`;
   }, []);

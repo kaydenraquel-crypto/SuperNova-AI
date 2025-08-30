@@ -21,7 +21,18 @@
       "Bash(git add:*)",
       "Bash(chmod:*)",
       "Bash(git config:*)",
-      "Bash(git remote add:*)"
+      "Bash(git remote add:*)",
+      "Bash(timeout:*)",
+      "Bash(npm start)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(sqlite3:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(sed:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

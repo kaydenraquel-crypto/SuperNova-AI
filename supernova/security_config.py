@@ -7,7 +7,8 @@ import os
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from datetime import timedelta
-from pydantic import BaseSettings, Field, validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator
 from cryptography.fernet import Fernet
 import secrets
 
@@ -312,9 +313,10 @@ class SecuritySettings(BaseSettings):
         }
     
     class Config:
-        env_prefix = "SUPERNOVA_SECURITY_"
+        env_prefix = ""  # Allow all environment variables without prefix
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"  # Allow extra environment variables
 
 
 # Global security settings instance

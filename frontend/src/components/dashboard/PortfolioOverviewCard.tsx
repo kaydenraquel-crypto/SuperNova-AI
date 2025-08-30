@@ -19,8 +19,23 @@ import {
   ShowChart,
   Assessment,
 } from '@mui/icons-material';
-import { useThemeColors } from '@/hooks/useTheme';
-import { formatFinancialNumber } from '@/theme';
+import { useThemeColors } from '../../hooks/useTheme';
+
+// Utility function for formatting financial numbers
+const formatFinancialNumber = (value: number, options?: { currency?: boolean; compact?: boolean }) => {
+  const { currency = true, compact = false } = options || {};
+  
+  if (compact && Math.abs(value) >= 1000000) {
+    return (currency ? '$' : '') + (value / 1000000).toFixed(1) + 'M';
+  } else if (compact && Math.abs(value) >= 1000) {
+    return (currency ? '$' : '') + (value / 1000).toFixed(1) + 'K';
+  }
+  
+  return (currency ? '$' : '') + value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 interface PortfolioData {
   totalValue: number;

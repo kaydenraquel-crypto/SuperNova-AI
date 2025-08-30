@@ -138,7 +138,9 @@ class Team(Base):
     members: Mapped[List["User"]] = relationship(
         "User", 
         secondary=team_members,
-        back_populates="teams"
+        back_populates="teams",
+        primaryjoin="Team.id == team_members.c.team_id",
+        secondaryjoin="User.id == team_members.c.user_id"
     )
     
     # Related entities
@@ -428,7 +430,7 @@ class TeamActivity(Base):
     # Activity content
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(Text, nullable=True)
-    metadata: Mapped[str] = mapped_column(Text, nullable=True)  # JSON with activity data
+    activity_metadata: Mapped[str] = mapped_column(Text, nullable=True)  # JSON with activity data
     
     # Related entities
     resource_type: Mapped[str] = mapped_column(String(50), nullable=True)  # portfolio, strategy, etc.

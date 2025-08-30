@@ -21,7 +21,7 @@ from .collaboration_models import (
     team_members, portfolio_shares, strategy_shares
 )
 from .analytics_models import Portfolio
-from .schemas import Strategy
+from .db import Strategy
 
 # Collaboration imports
 from .collaboration_schemas import (

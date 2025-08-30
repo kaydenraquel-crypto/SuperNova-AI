@@ -8,7 +8,8 @@ with comprehensive validation and type checking.
 from __future__ import annotations
 from typing import Dict, List, Optional, Any, Union, Set
 from enum import Enum
-from pydantic import BaseSettings, Field, validator, root_validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator, root_validator
 from datetime import datetime
 import os
 import re

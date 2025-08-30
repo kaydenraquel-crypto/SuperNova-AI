@@ -102,7 +102,7 @@ class UsageRecord(Base):
     hour = Column(Integer, default=lambda: datetime.utcnow().hour, index=True)
     
     # Additional metadata
-    metadata = Column(Text, nullable=True)  # JSON
+    usage_metadata = Column(Text, nullable=True)  # JSON
 
     __table_args__ = (
         Index('idx_provider_date', 'provider', 'date'),
@@ -131,7 +131,7 @@ class CostAlert(Base):
     sent_at = Column(DateTime, nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
     
-    metadata = Column(Text, nullable=True)
+    alert_metadata = Column(Text, nullable=True)
 
 class UsageSummary(Base):
     """Pre-aggregated usage summaries for fast reporting"""
@@ -295,7 +295,7 @@ class LLMCostTracker:
                 timestamp=now,
                 date=now.date(),
                 hour=now.hour,
-                metadata=json.dumps(metadata) if metadata else None
+                usage_metadata=json.dumps(metadata) if metadata else None
             )
             
             # Store in database

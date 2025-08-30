@@ -30,8 +30,8 @@ import {
   PieChart
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import AdvancedAnalyticsDashboard from '@/components/analytics/AdvancedAnalyticsDashboard';
+import { useAuth } from '../hooks/useAuth';
+import AdvancedAnalyticsDashboard from '../components/analytics/AdvancedAnalyticsDashboard';
 
 interface Portfolio {
   id: number;

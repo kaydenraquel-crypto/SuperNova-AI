@@ -9,7 +9,7 @@ import asyncio
 import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Callable
-from fastapi import Request, Response, HTTPException, status
+from fastapi import Request, Response, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp

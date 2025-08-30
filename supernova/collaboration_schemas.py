@@ -3,7 +3,7 @@ SuperNova AI Collaboration Schemas
 Pydantic models for team collaboration, sharing, and communication API validation
 """
 
-from pydantic import BaseModel, Field, EmailStr, validator, root_validator
+from pydantic import BaseModel, Field, EmailStr, validator, model_validator
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -233,14 +233,14 @@ class TransferOwnershipRequest(BaseModel):
 class SharePortfolioRequest(BaseModel):
     """Portfolio sharing request"""
     portfolio_id: int = Field(..., description="Portfolio ID to share")
-    target_type: str = Field(..., regex="^(team|user|public)$", description="Share target type")
+    target_type: str = Field(..., pattern="^(team|user|public)$", description="Share target type")
     target_id: Optional[int] = Field(None, description="Team or user ID")
     permission_level: SharePermission = Field(default=SharePermission.VIEW, description="Permission level")
     expires_at: Optional[datetime] = Field(None, description="Share expiration")
     password_protected: bool = Field(default=False, description="Password protection")
     password: Optional[str] = Field(None, min_length=6, description="Access password")
     
-    @root_validator
+    @model_validator(mode='before')
     def validate_target(cls, values):
         target_type = values.get('target_type')
         target_id = values.get('target_id')
@@ -253,7 +253,7 @@ class SharePortfolioRequest(BaseModel):
         
         return values
     
-    @root_validator
+    @model_validator(mode='before')
     def validate_password(cls, values):
         password_protected = values.get('password_protected', False)
         password = values.get('password')
@@ -267,13 +267,13 @@ class SharePortfolioRequest(BaseModel):
 class ShareStrategyRequest(BaseModel):
     """Strategy sharing request"""
     strategy_id: int = Field(..., description="Strategy ID to share")
-    target_type: str = Field(..., regex="^(team|user|public)$", description="Share target type")
+    target_type: str = Field(..., pattern="^(team|user|public)$", description="Share target type")
     target_id: Optional[int] = Field(None, description="Team or user ID")
     permission_level: SharePermission = Field(default=SharePermission.VIEW, description="Permission level")
     expires_at: Optional[datetime] = Field(None, description="Share expiration")
     include_backtest_results: bool = Field(default=True, description="Include backtest data")
     
-    @root_validator
+    @model_validator(mode='before')
     def validate_target(cls, values):
         target_type = values.get('target_type')
         target_id = values.get('target_id')
@@ -289,7 +289,7 @@ class ShareStrategyRequest(BaseModel):
 
 class CreateShareLinkRequest(BaseModel):
     """Create public share link request"""
-    resource_type: str = Field(..., regex="^(portfolio|strategy|analysis)$", description="Resource type")
+    resource_type: str = Field(..., pattern="^(portfolio|strategy|analysis)$", description="Resource type")
     resource_id: int = Field(..., description="Resource ID")
     permission_level: SharePermission = Field(default=SharePermission.VIEW, description="Permission level")
     title: Optional[str] = Field(None, max_length=255, description="Share link title")
@@ -305,7 +305,7 @@ class CreateShareLinkRequest(BaseModel):
             return validate_xss_safe(v.strip())
         return v
     
-    @root_validator
+    @model_validator(mode='before')
     def validate_password(cls, values):
         password_protected = values.get('password_protected', False)
         password = values.get('password')
@@ -467,7 +467,7 @@ class MarkNotificationsReadRequest(BaseModel):
     notification_ids: Optional[List[int]] = Field(None, description="Specific notification IDs")
     mark_all: bool = Field(default=False, description="Mark all as read")
     
-    @root_validator
+    @model_validator(mode='before')
     def validate_request(cls, values):
         notification_ids = values.get('notification_ids')
         mark_all = values.get('mark_all', False)
@@ -519,7 +519,7 @@ class TeamAnalyticsResponse(BaseModel):
 
 class AddCommentRequest(BaseModel):
     """Add comment request"""
-    resource_type: str = Field(..., regex="^(portfolio|strategy|backtest)$", description="Resource type")
+    resource_type: str = Field(..., pattern="^(portfolio|strategy|backtest)$", description="Resource type")
     resource_id: int = Field(..., description="Resource ID")
     content: str = Field(..., min_length=1, max_length=5000, description="Comment content")
     parent_comment_id: Optional[int] = Field(None, description="Parent comment for replies")

@@ -12,14 +12,14 @@ services:
       - "80:80"
     environment:
       - DATABASE_URL=sqlite:///./data/supernova.db
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
-      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-change-in-production}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY environment variable is required}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET environment variable is required}
       - REDIS_URL=redis://redis:6379/0
       - TIMESCALE_HOST=timescaledb
       - TIMESCALE_PORT=5432
       - TIMESCALE_DB=supernova_ts
       - TIMESCALE_USER=supernova
-      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-supernova123}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:?TIMESCALE_PASSWORD environment variable is required}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO

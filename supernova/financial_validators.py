@@ -561,5 +561,19 @@ class FinancialDataValidator:
         return int(duration.total_seconds() / (timeframe_minutes * 60))
 
 
+# Convenience functions for common validations
+def validate_portfolio_id(portfolio_id: str) -> str:
+    """Validate portfolio ID format"""
+    return input_validator.validate_alphanumeric_with_dashes(portfolio_id)
+
+def validate_symbol(symbol: str) -> str:
+    """Validate financial symbol"""
+    return financial_validator.validate_stock_symbol(symbol)
+
+def validate_date_range(start_date: str, end_date: str) -> tuple:
+    """Validate date range"""
+    return input_validator.validate_date_range(start_date, end_date)
+
+
 # Global instance
 financial_validator = FinancialDataValidator()

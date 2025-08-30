@@ -215,7 +215,9 @@ const APIManagementDashboard: React.FC = () => {
   const handleRefresh = async () => {
     setLoading(true);
     // Trigger data refresh
-    window.location.reload(); // Simple refresh for now
+    if (typeof window !== 'undefined') {
+      window.location.reload(); // Simple refresh for now
+    }
   };
 
   const formatNumber = (num: number): string => {

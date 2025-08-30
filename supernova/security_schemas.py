@@ -291,7 +291,7 @@ class PortfolioUpdateRequest(BaseModel):
     user_id: int = Field(..., gt=0, description="User identifier")
     positions: List[Dict[str, Any]] = Field(..., min_items=1, max_items=1000, description="Portfolio positions")
     total_value: Decimal = Field(..., gt=0, description="Total portfolio value")
-    currency: str = Field("USD", regex=r'^[A-Z]{3}$', description="Portfolio currency")
+    currency: str = Field("USD", pattern=r'^[A-Z]{3}$', description="Portfolio currency")
     last_updated: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
     
     @validator('positions')
@@ -346,7 +346,7 @@ class TransactionRequest(BaseModel):
     quantity: Optional[Decimal] = Field(None, gt=0, description="Transaction quantity")
     price: Optional[Decimal] = Field(None, gt=0, description="Transaction price")
     amount: Decimal = Field(..., description="Transaction amount")
-    currency: str = Field("USD", regex=r'^[A-Z]{3}$', description="Transaction currency")
+    currency: str = Field("USD", pattern=r'^[A-Z]{3}$', description="Transaction currency")
     fees: Optional[Decimal] = Field(None, ge=0, description="Transaction fees")
     notes: Optional[str] = Field(None, max_length=500, description="Transaction notes")
     
@@ -557,7 +557,7 @@ class SecurityIncidentReport(BaseModel):
 class WebSocketAuthRequest(BaseModel):
     """WebSocket authentication request"""
     token: str = Field(..., min_length=10, description="Authentication token")
-    protocol_version: str = Field("1.0", regex=r'^\d+\.\d+$', description="Protocol version")
+    protocol_version: str = Field("1.0", pattern=r'^\d+\.\d+$', description="Protocol version")
     client_info: Optional[Dict[str, str]] = Field(None, description="Client information")
     
     @validator('token')
@@ -625,7 +625,7 @@ class WebSocketMessageValidation(BaseModel):
 class SecurityPolicyUpdate(BaseModel):
     """Security policy configuration update"""
     policy_name: str = Field(..., min_length=1, max_length=100, description="Policy name")
-    policy_version: str = Field(..., regex=r'^\d+\.\d+\.\d+$', description="Policy version")
+    policy_version: str = Field(..., pattern=r'^\d+\.\d+\.\d+$', description="Policy version")
     effective_date: datetime = Field(..., description="When policy becomes effective")
     configuration: Dict[str, Any] = Field(..., description="Policy configuration")
     approval_required: bool = Field(True, description="Whether approval is required")

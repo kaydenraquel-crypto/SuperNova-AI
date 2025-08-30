@@ -845,7 +845,7 @@ async def add_comment(
 
 @router.get("/comments", response_model=CommentListResponse)
 async def get_comments(
-    resource_type: str = Query(..., regex="^(portfolio|strategy|backtest)$"),
+    resource_type: str = Query(..., pattern="^(portfolio|strategy|backtest)$"),
     resource_id: int = Query(...),
     current_user: dict = Depends(get_current_user)
 ):

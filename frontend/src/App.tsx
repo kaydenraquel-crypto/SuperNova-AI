@@ -1,232 +1,139 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { HelmetProvider } from 'react-helmet-async';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ReactQueryDevtools } from 'react-query/devtools';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { 
+  AppBar, 
+  Toolbar, 
+  Typography, 
+  Container, 
+  Box, 
+  Card, 
+  CardContent, 
+  Grid,
+  Button
+} from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
-// Theme
-import { createSuperNovaTheme } from '@/theme';
-import { ThemeContextProvider, useTheme } from '@/hooks/useTheme';
-
-// Components
-import LoadingScreen from '@/components/common/LoadingScreen';
-import ErrorBoundary from '@/components/common/ErrorBoundary';
-import ProgressBar from '@/components/common/ProgressBar';
-import NotificationProvider from '@/components/common/NotificationProvider';
-
-// Lazy-loaded pages
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
-const PortfolioPage = lazy(() => import('@/pages/PortfolioPage'));
-const ChatPage = lazy(() => import('@/pages/ChatPage'));
-const MarketPage = lazy(() => import('@/pages/MarketPage'));
-const BacktestPage = lazy(() => import('@/pages/BacktestPage'));
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
-
-// Layout
-import MainLayout from '@/components/layout/MainLayout';
-import AuthLayout from '@/components/layout/AuthLayout';
-
-// Hooks and services
-import { useAuth } from '@/hooks/useAuth';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { ApiProvider } from '@/services/api';
-
-// Types
-import type { PaletteMode } from '@mui/material';
-
-// React Query client configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#3f51b5',
     },
-    mutations: {
-      retry: 1,
+    secondary: {
+      main: '#f50057',
     },
   },
 });
 
-// Protected Route Component
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredAuth?: boolean;
-}
+const Dashboard = () => (
+  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Typography variant="h3" component="h1" gutterBottom>
+      SuperNova AI Dashboard
+    </Typography>
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={6} lg={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h5" component="h2">
+              Portfolio Overview
+            </Typography>
+            <Typography variant="body2">
+              Your portfolio performance and analytics will appear here.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6} lg={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h5" component="h2">
+              Market Data
+            </Typography>
+            <Typography variant="body2">
+              Real-time market information and trends.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6} lg={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h5" component="h2">
+              AI Insights
+            </Typography>
+            <Typography variant="body2">
+              AI-powered financial insights and recommendations.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  </Container>
+);
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredAuth = true 
-}) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const Chat = () => (
+  <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <Typography variant="h3" component="h1" gutterBottom>
+      AI Assistant
+    </Typography>
+    <Card>
+      <CardContent>
+        <Typography variant="body1">
+          Chat with your AI financial advisor here.
+        </Typography>
+      </CardContent>
+    </Card>
+  </Container>
+);
 
-  if (isLoading) {
-    return <LoadingScreen message="Verifying authentication..." />;
-  }
+const Portfolio = () => (
+  <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Typography variant="h3" component="h1" gutterBottom>
+      Portfolio Management
+    </Typography>
+    <Card>
+      <CardContent>
+        <Typography variant="body1">
+          Manage your investment portfolio here.
+        </Typography>
+      </CardContent>
+    </Card>
+  </Container>
+);
 
-  if (requiredAuth && !isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!requiredAuth && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-// Main App Content Component
-const AppContent: React.FC = () => {
-  const { mode } = useTheme();
-  const theme = createSuperNovaTheme(mode);
-  const { isAuthenticated } = useAuth();
-
-  // Initialize WebSocket connection for authenticated users
-  const { connectionStatus, marketData, notifications } = useWebSocket({
-    enabled: isAuthenticated,
-    reconnectAttempts: 5,
-    reconnectInterval: 3000,
-  });
-
+function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ProgressBar />
-      <NotificationProvider>
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={
-              <ProtectedRoute requiredAuth={false}>
-                <AuthLayout>
-                  <Suspense fallback={<LoadingScreen />}>
-                    <LoginPage />
-                  </Suspense>
-                </AuthLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Protected Routes */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <MainLayout 
-                  connectionStatus={connectionStatus}
-                  notifications={notifications}
-                >
-                  <Suspense fallback={<LoadingScreen message="Loading page..." />}>
-                    <Routes>
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/portfolio" element={<PortfolioPage />} />
-                      <Route path="/chat" element={<ChatPage />} />
-                      <Route path="/market" element={<MarketPage />} />
-                      <Route path="/backtest" element={<BacktestPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/404" element={<NotFoundPage />} />
-                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                      <Route path="*" element={<Navigate to="/404" replace />} />
-                    </Routes>
-                  </Suspense>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </NotificationProvider>
+      <Router>
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              SuperNova AI
+            </Typography>
+            <Button color="inherit" component={Link} to="/">
+              Dashboard
+            </Button>
+            <Button color="inherit" component={Link} to="/chat">
+              Chat
+            </Button>
+            <Button color="inherit" component={Link} to="/portfolio">
+              Portfolio
+            </Button>
+          </Toolbar>
+        </AppBar>
+        
+        <Box sx={{ flexGrow: 1 }}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+          </Routes>
+        </Box>
+      </Router>
     </ThemeProvider>
   );
-};
-
-// Theme preference detection hook
-const useThemePreference = (): PaletteMode => {
-  const [mode, setMode] = useState<PaletteMode>(() => {
-    const savedMode = localStorage.getItem('superNovaTheme') as PaletteMode | null;
-    if (savedMode && ['light', 'dark'].includes(savedMode)) {
-      return savedMode;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('superNovaTheme')) {
-        setMode(e.matches ? 'dark' : 'light');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  return mode;
-};
-
-// Main App Component
-const App: React.FC = () => {
-  const defaultThemeMode = useThemePreference();
-
-  // Performance monitoring
-  useEffect(() => {
-    // Log initial performance metrics
-    if ('performance' in window) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      if (navigation) {
-        console.log('App Performance Metrics:', {
-          domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,
-          firstContentfulPaint: navigation.loadEventEnd - navigation.fetchStart,
-          totalLoadTime: navigation.loadEventEnd - navigation.fetchStart,
-        });
-      }
-    }
-
-    // Error tracking
-    const handleUnhandledError = (event: ErrorEvent) => {
-      console.error('Unhandled error:', event.error);
-      // Here you could send to your error tracking service
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      // Here you could send to your error tracking service
-    };
-
-    window.addEventListener('error', handleUnhandledError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleUnhandledError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  return (
-    <ErrorBoundary>
-      <HelmetProvider>
-        <QueryClientProvider client={queryClient}>
-          <ApiProvider>
-            <ThemeContextProvider defaultMode={defaultThemeMode}>
-              <Router>
-                <AppContent />
-              </Router>
-            </ThemeContextProvider>
-          </ApiProvider>
-          {process.env.NODE_ENV === 'development' && (
-            <ReactQueryDevtools initialIsOpen={false} />
-          )}
-        </QueryClientProvider>
-      </HelmetProvider>
-    </ErrorBoundary>
-  );
-};
+}
 
 export default App;

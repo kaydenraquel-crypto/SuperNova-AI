@@ -1,4 +1,4 @@
-# Backend Dependencies
+# Core Backend Dependencies
 fastapi==0.111.0
 uvicorn==0.30.1
 pydantic==2.8.2
@@ -13,100 +13,52 @@ scikit-learn==1.5.1
 websockets==12.0
 python-socketio>=5.8.0
 
-# Sentiment Analysis Dependencies
-tweepy==4.14.0
-praw==7.7.1
-spacy==3.7.2
+# Basic Sentiment Analysis Dependencies
 textblob==0.17.1
 vaderSentiment==3.3.2
 nltk==3.8.1
-transformers==4.35.0
-torch==2.1.0
 beautifulsoup4==4.12.2
-newspaper3k==0.2.8
 aiohttp==3.9.5
-asyncio-throttle==1.0.2
-lxml==4.9.3
 redis==5.0.1
-tenacity==8.2.3
 
 # VectorBT backtesting dependencies
 vectorbt>=0.25.0
-ta-lib
 numba>=0.56.0
 
-# LangChain and LLM Integration Dependencies
-langchain>=0.1.0
-langchain-openai>=0.1.0
-langchain-anthropic>=0.1.0
-langchain-community>=0.1.0
-langchain-core>=0.1.0
-langchain-ollama>=0.1.0
-langchain-huggingface>=0.1.0
-tiktoken>=0.5.0
+# Basic LLM Dependencies (minimal set)
 openai>=1.0.0
 anthropic>=0.21.0
-
-# Workflow Orchestration Dependencies
-prefect>=2.14.0
-prefect-sqlalchemy>=0.2.0
+tiktoken>=0.5.0
 
 # Production Database Dependencies
 psycopg2-binary>=2.9.0
 asyncpg>=0.28.0
-psycopg2>=2.9.0
-sqlalchemy-utils>=0.41.0
-
-# Database Migration and Management
 alembic>=1.13.0
-yoyo-migrations>=8.2.0
-
-# Database Monitoring and Performance
-schedule>=1.2.0
-
-# Cloud Storage for Backups
-boto3>=1.34.0
-azure-storage-blob>=12.19.0
-google-cloud-storage>=2.10.0
 
 # Configuration Management
 pyyaml>=6.0.1
+pydantic-settings>=2.0.0
+langchain-ollama>=0.1.0
+langchain-huggingface>=0.1.0
+watchdog>=3.0.0
+aiofiles>=23.0.0
 
-# Additional Database Tools
-pymongo>=4.6.0  # For potential MongoDB integration
+# Additional Security and QR Code Generation
+pyotp>=2.8.0
+qrcode>=7.4.2
 
-# Hyperparameter Optimization Dependencies
-optuna>=3.4.0
-optuna-dashboard>=0.13.0
-joblib>=1.3.0
-plotly>=5.17.0
+# TimescaleDB support
+timescaledb>=0.0.4
 
 # Authentication and Security
 passlib[bcrypt]>=1.7.4
 python-jose[cryptography]>=3.3.0
 python-multipart>=0.0.6
-
-# Comprehensive Security Framework Dependencies
 cryptography>=41.0.0
-pyotp>=2.8.0
-qrcode[pil]>=7.4.2
-bleach>=6.0.0
 sqlparse>=0.4.4
-aiofiles>=23.2.1
-
-# Security Testing and Monitoring
-bandit>=1.7.5
-safety>=3.0.0
-pip-audit>=2.6.0
-
-# CORS and Web Security
-fastapi-cors>=0.0.6
-starlette>=0.32.0
 
 # Development Tools
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
 black>=23.7.0
 flake8>=6.0.0
-mypy>=1.5.0

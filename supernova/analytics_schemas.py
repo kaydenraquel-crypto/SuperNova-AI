@@ -109,7 +109,7 @@ class MarketSentimentRequest(BaseModel):
     """Request schema for market sentiment analysis"""
     symbols: Optional[List[str]] = Field(None, description="List of symbols to analyze", max_items=50)
     sector: Optional[str] = Field(None, description="Sector to analyze", max_length=50)
-    timeframe: str = Field("1d", description="Timeframe for sentiment analysis", regex="^(1d|1w|1m)$")
+    timeframe: str = Field("1d", description="Timeframe for sentiment analysis", pattern="^(1d|1w|1m)$")
     limit: int = Field(100, description="Maximum number of results", ge=1, le=1000)
     include_social: bool = Field(True, description="Include social media sentiment")
     include_news: bool = Field(True, description="Include news sentiment")

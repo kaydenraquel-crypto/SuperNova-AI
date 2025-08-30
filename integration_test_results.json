@@ -1,0 +1,67 @@
+{
+  "backend": {
+    "health": {
+      "status": "SUCCESS",
+      "data": {
+        "status": "healthy",
+        "timestamp": "2025-08-28T22:37:34.646407",
+        "service": "supernova-api",
+        "version": "0.1.0"
+      }
+    },
+    "/health": {
+      "status": "SUCCESS",
+      "code": 200
+    },
+    "/api/indicators/health": {
+      "status": "SUCCESS",
+      "code": 200
+    },
+    "/api/alpha-vantage/health": {
+      "status": "UNEXPECTED",
+      "code": 405
+    },
+    "/api/indicators/functions/all": {
+      "status": "SUCCESS",
+      "code": 200
+    },
+    "/api/history": {
+      "status": "SUCCESS",
+      "code": 422
+    },
+    "/auth/register": {
+      "status": "SUCCESS",
+      "code": 422
+    },
+    "/auth/login": {
+      "status": "SUCCESS",
+      "code": 422
+    },
+    "authentication": {
+      "status": "SUCCESS",
+      "message": "Authentication required"
+    }
+  },
+  "frontend": {
+    "availability": {
+      "status": "SUCCESS",
+      "statusCode": 200
+    }
+  },
+  "integration": {
+    "proxy": {
+      "status": "SUCCESS",
+      "data": {
+        "status": "healthy",
+        "talib_available": true,
+        "talib_version": "0.6.6",
+        "test_calculation": "passed",
+        "timestamp": "2024-01-01T12:00:00Z"
+      }
+    }
+  },
+  "errors": [],
+  "warnings": [
+    "Alpha Vantage Health returned unexpected status 405"
+  ]
+}

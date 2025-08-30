@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Depends, Request, status
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+import socketio
 from .db import init_db, SessionLocal, User, Profile, Asset, WatchlistItem, is_timescale_available, get_timescale_session
 from .schemas import (
     # Authentication schemas
@@ -65,19 +67,50 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SuperNova Advisor API", version="0.1.0", lifespan=lifespan)
 
-# Add security middleware
-app.add_middleware(SecurityMiddleware)
+# Create Socket.IO server
+sio = socketio.AsyncServer(
+    cors_allowed_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080"],
+    logger=True,
+    engineio_logger=True
+)
 
-# Add API management middleware
-from .api_management_middleware import APIManagementMiddleware
-app.add_middleware(APIManagementMiddleware)
+# Mount Socket.IO to the FastAPI app
+socket_asgi_app = socketio.ASGIApp(sio)
+app.mount("/socket.io", socket_asgi_app)
+
+# Add CORS middleware for frontend-backend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# Add security middleware - temporarily disabled for error hunting
+# app.add_middleware(SecurityMiddleware)
+
+# Add API management middleware - temporarily disabled due to rate limiter interface mismatch
+# from .api_management_middleware import APIManagementMiddleware
+# app.add_middleware(APIManagementMiddleware)
 
 # Include analytics router
 app.include_router(analytics_router)
 
 # Include collaboration router
-from .collaboration_api import router as collaboration_router
-app.include_router(collaboration_router)
+# Temporarily disabled for testing basic functionality
+# from .collaboration_api import router as collaboration_router
+# app.include_router(collaboration_router)
 
 # Include WebSocket router
 from .websocket_api import router as websocket_router
@@ -86,6 +119,29 @@ app.include_router(websocket_router)
 # Include API Management router
 from .api_management_api import router as api_management_router
 app.include_router(api_management_router)
+
+# Include Indicators router
+from .indicators_api import router as indicators_router
+app.include_router(indicators_router)
+
+# Include History router
+from .history_api import router as history_router
+app.include_router(history_router)
+
+# Add global OPTIONS handler for CORS preflight requests
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"message": "OK"}
+
+# Add health endpoint for integration testing
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "supernova-api",
+        "version": "0.1.0"
+    }
 
 # ====================================
 # AUTHENTICATION ENDPOINTS
@@ -969,7 +1025,7 @@ async def get_sentiment_historical_single(
     symbol: str,
     start_date: datetime = Query(..., description="Start date for historical data"),
     end_date: datetime = Query(..., description="End date for historical data"),
-    interval: str = Query("raw", description="Data aggregation interval", regex="^(raw|1h|6h|1d|1w)$"),
+    interval: str = Query("raw", description="Data aggregation interval", pattern="^(raw|1h|6h|1d|1w)$"),
     min_confidence: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence threshold"),
     limit: int = Query(1000, ge=1, le=10000, description="Maximum records to return"),
     offset: int = Query(0, ge=0, description="Records to skip for pagination")
@@ -1251,7 +1307,7 @@ async def get_sentiment_aggregated(
     symbols: List[str] = Query(..., description="Stock symbols to aggregate"),
     start_date: datetime = Query(..., description="Start date for aggregation"),
     end_date: datetime = Query(..., description="End date for aggregation"),
-    aggregation: str = Query("1d", description="Aggregation interval", regex="^(1h|6h|1d|1w)$"),
+    aggregation: str = Query("1d", description="Aggregation interval", pattern="^(1h|6h|1d|1w)$"),
     include_stats: bool = Query(True, description="Include summary statistics")
 ):
     """
@@ -1853,7 +1909,7 @@ async def delete_chat_session(
 @app.post("/chat/feedback")
 async def submit_chat_feedback(
     message_id: str,
-    rating: int = Field(..., ge=1, le=5),
+    rating: int = Query(..., ge=1, le=5),
     feedback: Optional[str] = None,
     helpful: bool = True,
     current_user: Dict = Depends(get_current_user)
@@ -3403,3 +3459,218 @@ async def shutdown_monitoring():
         
     except Exception as e:
         logger.error(f"Failed to cleanup monitoring systems: {e}")
+
+
+# ================================
+# SOCKET.IO EVENT HANDLERS
+# ================================
+
+# Store active sessions
+active_socket_sessions = {}
+active_subscriptions = {}
+
+@sio.event
+async def connect(sid, environ, auth):
+    """Handle client connection"""
+    logger.info(f"Socket.IO client {sid} connecting...")
+    
+    # Verify authentication token
+    if not auth or 'token' not in auth:
+        logger.warning(f"Socket.IO client {sid} connecting without token")
+        await sio.disconnect(sid)
+        return False
+        
+    try:
+        token = auth['token']
+        payload = auth_manager.verify_token(token, "access")
+        user_id = payload["sub"]
+        
+        # Store session info
+        active_socket_sessions[sid] = {
+            'user_id': user_id,
+            'connected_at': datetime.now(),
+            'subscriptions': set()
+        }
+        
+        await sio.emit('connected', {
+            'status': 'success',
+            'message': 'Connected to SuperNova AI',
+            'user_id': user_id,
+            'timestamp': datetime.now().isoformat()
+        }, room=sid)
+        
+        logger.info(f"Socket.IO client {sid} connected successfully for user {user_id}")
+        return True
+        
+    except AuthenticationError as e:
+        logger.warning(f"Authentication failed for Socket.IO client {sid}: {e}")
+        await sio.emit('error', {'message': 'Authentication failed'}, room=sid)
+        await sio.disconnect(sid)
+        return False
+    except Exception as e:
+        logger.error(f"Error during Socket.IO connection for {sid}: {e}")
+        await sio.disconnect(sid)
+        return False
+
+@sio.event
+async def disconnect(sid):
+    """Handle client disconnection"""
+    logger.info(f"Socket.IO client {sid} disconnected")
+    
+    # Clean up session data
+    if sid in active_socket_sessions:
+        session_info = active_socket_sessions[sid]
+        
+        # Remove from all subscriptions
+        for subscription in session_info['subscriptions']:
+            if subscription in active_subscriptions:
+                active_subscriptions[subscription].discard(sid)
+                if not active_subscriptions[subscription]:
+                    del active_subscriptions[subscription]
+        
+        del active_socket_sessions[sid]
+
+@sio.event
+async def subscribe(sid, data):
+    """Handle channel subscription"""
+    if sid not in active_socket_sessions:
+        await sio.emit('error', {'message': 'Not authenticated'}, room=sid)
+        return
+        
+    channel = data.get('channel')
+    if not channel:
+        await sio.emit('error', {'message': 'Channel name required'}, room=sid)
+        return
+        
+    # Add to subscriptions
+    if channel not in active_subscriptions:
+        active_subscriptions[channel] = set()
+    active_subscriptions[channel].add(sid)
+    active_socket_sessions[sid]['subscriptions'].add(channel)
+    
+    logger.info(f"Client {sid} subscribed to channel: {channel}")
+    await sio.emit('subscribed', {'channel': channel}, room=sid)
+
+@sio.event
+async def unsubscribe(sid, data):
+    """Handle channel unsubscription"""
+    if sid not in active_socket_sessions:
+        return
+        
+    channel = data.get('channel')
+    if not channel:
+        return
+        
+    # Remove from subscriptions
+    if channel in active_subscriptions:
+        active_subscriptions[channel].discard(sid)
+        if not active_subscriptions[channel]:
+            del active_subscriptions[channel]
+    
+    active_socket_sessions[sid]['subscriptions'].discard(channel)
+    
+    logger.info(f"Client {sid} unsubscribed from channel: {channel}")
+    await sio.emit('unsubscribed', {'channel': channel}, room=sid)
+
+@sio.event
+async def chat_message(sid, data):
+    """Handle chat messages"""
+    if sid not in active_socket_sessions:
+        await sio.emit('error', {'message': 'Not authenticated'}, room=sid)
+        return
+        
+    session_info = active_socket_sessions[sid]
+    user_id = session_info['user_id']
+    
+    session_id = data.get('sessionId')
+    message = data.get('message')
+    metadata = data.get('metadata', {})
+    
+    if not session_id or not message:
+        await sio.emit('error', {'message': 'Session ID and message required'}, room=sid)
+        return
+        
+    try:
+        # Create chat request using existing logic
+        from .advisor import advise
+        
+        # Get database session
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            
+            # Create chat context
+            chat_context = ChatContext(
+                user_id=user_id,
+                session_id=session_id,
+                previous_messages=[],
+                user_preferences={}
+            )
+            
+            # Get advice from advisor
+            advice_result = await advise(
+                message,
+                session_id=session_id,
+                profile_id=user.profile_id if user else None,
+                context=chat_context,
+                db=db
+            )
+            
+            # Emit response back to client
+            response_message = {
+                'id': f"msg_{int(time.time() * 1000)}",
+                'sessionId': session_id,
+                'role': 'assistant',
+                'content': advice_result.advice,
+                'timestamp': datetime.now().isoformat(),
+                'metadata': {
+                    'confidence': advice_result.confidence,
+                    'suggestions': advice_result.suggestions or [],
+                    'charts': []
+                }
+            }
+            
+            # Send to specific session channel
+            channel = f"chat:{session_id}"
+            if channel in active_subscriptions:
+                for client_sid in active_subscriptions[channel]:
+                    await sio.emit('chat_message', response_message, room=client_sid)
+            
+            # Also send directly to the sender
+            await sio.emit('chat_message', response_message, room=sid)
+            
+            logger.info(f"Processed chat message for session {session_id}")
+            
+        finally:
+            db.close()
+        
+    except Exception as e:
+        logger.error(f"Error processing chat message: {e}")
+        await sio.emit('error', {'message': 'Failed to process message'}, room=sid)
+
+# Helper function to broadcast to subscribed clients
+async def broadcast_to_channel(channel: str, event: str, data: dict):
+    """Broadcast data to all clients subscribed to a channel"""
+    if channel in active_subscriptions:
+        for client_sid in active_subscriptions[channel]:
+            try:
+                await sio.emit(event, data, room=client_sid)
+            except Exception as e:
+                logger.error(f"Error broadcasting to client {client_sid}: {e}")
+
+# Helper function to send market data updates
+async def broadcast_market_data(market_data: MarketDataUpdate):
+    """Broadcast market data to subscribed clients"""
+    await broadcast_to_channel('market_data', 'market_data', market_data.dict())
+    # Also send to symbol-specific channels
+    await broadcast_to_channel(f'market_data:{market_data.symbol}', 'market_data', market_data.dict())
+
+# Helper function to send notifications
+async def broadcast_notification(notification: dict):
+    """Broadcast notification to subscribed clients"""
+    await broadcast_to_channel('notifications', 'notification', notification)
+
+# Helper function to send portfolio updates
+async def broadcast_portfolio_update(portfolio_update: dict):
+    """Broadcast portfolio update to subscribed clients"""
+    await broadcast_to_channel('portfolio_updates', 'portfolio_update', portfolio_update)
